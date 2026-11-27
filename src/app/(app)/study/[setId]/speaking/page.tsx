@@ -29,7 +29,7 @@ async function Content({ params }: { params: Params }) {
     <div className="mx-auto max-w-3xl space-y-4">
       <Link className="text-sm font-bold underline" href={`/sets/${id.data}`}>Về bộ từ: {set.data.title}</Link>
       <SpeakingPractice mode="speaking" enabled={isSpeechServiceConfigured()} ai={isAiConfigured()}
-        browserStt={!process.env.GROQ_API_KEY} cards={cards.data} />
+        browserStt={!process.env.GROQ_API_KEY && !process.env.SPEECH_SERVICE_URL} cards={cards.data} />
     </div>
   );
 }

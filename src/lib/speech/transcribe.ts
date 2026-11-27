@@ -1,11 +1,12 @@
 import "server-only";
 import { z } from "zod";
+import { transcribeSpeech } from "./client";
 
 const transcriptSchema = z.object({ text: z.string().trim().min(1).max(2000) });
 
 /**
- * Transcribes a WAV recording with Groq Whisper. Returns null when Groq is not
- * configured or the request fails, so callers can fall back to typed input.
+ * Transcribes a WAV recording with Groq Whisper. Returns null when Groq is not configured,
+ * over its free limit (429) or failing, so callers can fall back (see transcribeRecording).
  */
 export async function transcribeGroq(wav: Blob, signal: AbortSignal): Promise<string | null> {
   const apiKey = process.env.GROQ_API_KEY;
@@ -28,4 +29,15 @@ export async function transcribeGroq(wav: Blob, signal: AbortSignal): Promise<st
     signal.throwIfAborted();
     return null;
   }
+}
+
+/**
+ * Speech to text for free answers: Groq Whisper first (fast, accurate); when Groq is not
+ * configured, rate-limited or failing, fall back to Whisper on our own speech service.
+ */
+export async function transcribeRecording(wav: Blob, signal: AbortSignal): Promise<string | null> {
+  const fromGroq = await transcribeGroq(wav, signal);
+  if (fromGroq) return fromGroq;
+  signal.throwIfAborted();
+  return transcribeSpeech(wav);
 }

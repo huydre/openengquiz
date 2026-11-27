@@ -13,7 +13,7 @@ import {
 import { COURSE_CALL_TURNS } from "@/lib/ai/conversation-types";
 import { assertQuota, QuotaExceededError, recordUsage } from "@/lib/ai/quota";
 import { cefrSchema } from "@/lib/ai/speaking-feedback";
-import { transcribeGroq } from "@/lib/speech/transcribe";
+import { transcribeRecording } from "@/lib/speech/transcribe";
 import { MAX_AUDIO_BYTES, wavDuration } from "@/lib/speech/speaking-wav";
 import { parseMultipart, readBoundedBody } from "@/lib/http/multipart";
 import { createClient } from "@/lib/supabase/server";
@@ -257,5 +257,5 @@ async function readTurnInput(request: Request, signal: AbortSignal): Promise<Tur
 async function resolveTranscript(input: AudioTurnInput, signal: AbortSignal): Promise<string | null> {
   if (input.transcript) return input.transcript;
   if (!input.wav) return null;
-  return transcribeGroq(input.wav, signal);
+  return transcribeRecording(input.wav, signal);
 }

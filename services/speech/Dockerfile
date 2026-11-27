@@ -19,6 +19,8 @@ RUN useradd --create-home speech
 USER speech
 ENV HOME=/home/speech
 # Download Pronunciada's acoustic model at build time (it would otherwise download on first use).
+# Whisper (speech to text) model for free-speaking answers, downloaded at build time.
+RUN python -c "from faster_whisper import WhisperModel; WhisperModel('base.en', device='cpu', compute_type='int8')"
 # Scoring one second of silence may raise after the model loads, so only the cache dir is checked.
 RUN (python -c "import numpy as np, pronunciada; pronunciada.score((np.zeros(16000, dtype=np.float32), 16000), 'ready')" || true) \
   && test -d /home/speech/.cache/pronunciada

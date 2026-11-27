@@ -60,6 +60,27 @@ export function CourseQuestion({ question, second, terms, voice, ai, busy, submi
   getTranslation: () => Promise<string>;
 }) {
   const [mode, setMode] = useState<"voice" | "text">(voice ? "voice" : "text");
+  const [transcribing, setTranscribing] = useState(false);
+  const [sttError, setSttError] = useState("");
+
+  // When the browser could not transcribe, ask the server (Groq, then our own Whisper) so the
+  // learner sees and can edit the text before submitting.
+  async function fillTranscript(audio: Blob) {
+    setTranscribing(true);
+    setSttError("");
+    try {
+      const form = new FormData();
+      form.set("audio", audio, "recording.wav");
+      const response = await fetch("/api/speaking/transcribe", { method: "POST", body: form });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok || typeof body.text !== "string") throw new Error(body.error ?? "Chưa chép được lời.");
+      setAnswer((current) => current.trim() ? current : body.text);
+    } catch (cause) {
+      setSttError(cause instanceof Error ? cause.message : "Chưa chép được lời.");
+    } finally {
+      setTranscribing(false);
+    }
+  }
   const [answer, setAnswer] = useState("");
   const [recording, setRecording] = useState<RecordedAudio | null>(null);
   const [translation, setTranslation] = useState("");
@@ -123,13 +144,16 @@ export function CourseQuestion({ question, second, terms, voice, ai, busy, submi
       {mode === "voice" && <AudioRecorder disabled={busy} transcribe startLabel="Bắt đầu nói" recordingLabel="Đang nói: English" onRecording={(value) => {
         setRecording(value);
         setAnswer(value?.transcript ?? "");
+        if (value && !value.transcript.trim()) void fillTranscript(value.audio);
       }} />}
       {(mode === "text" || recording) && <div className="space-y-2">
         <label htmlFor="lesson-answer-input" className="block text-sm font-bold">{mode === "text" ? "Câu trả lời bằng tiếng Anh" : "Bản chép (có thể chỉnh sửa)"}</label>
-        <textarea id="lesson-answer-input" lang="en" rows={3} maxLength={2000} value={answer} disabled={busy} onChange={(event) => setAnswer(event.target.value)} className="w-full rounded-2xl border-2 bg-background p-3" />
+        <textarea id="lesson-answer-input" lang="en" rows={3} maxLength={2000} value={answer} disabled={busy || transcribing} placeholder={transcribing ? "Đang chép lời..." : undefined} onChange={(event) => setAnswer(event.target.value)} className="w-full rounded-2xl border-2 bg-background p-3" />
+        {transcribing && <LogoLoader size="sm" label="Đang chép lời bạn vừa nói..." />}
+        {sttError && <p role="alert" className="text-sm font-bold text-destructive">{sttError}</p>}
       </div>}
       {!ai && <p role="status" className="text-sm text-muted-foreground">Gia sư AI chưa sẵn sàng chấm câu trả lời.</p>}
-      <Button type="button" disabled={!ai || busy || (mode === "voice" ? !recording : !answer.trim())} onClick={() => void submit(answer, mode === "voice" ? recording?.audio : undefined)}>
+      <Button type="button" disabled={!ai || busy || transcribing || (mode === "voice" ? !recording : !answer.trim())} onClick={() => void submit(answer, mode === "voice" ? recording?.audio : undefined)}>
         Gửi câu trả lời
       </Button>
       {busy && <LogoLoader size="sm" label="Đang nhận xét" />}

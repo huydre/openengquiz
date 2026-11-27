@@ -3,7 +3,7 @@ import { isAiConfigured } from "@/lib/ai/client";
 import { assertQuota, QuotaExceededError, recordUsage } from "@/lib/ai/quota";
 import { cefrSchema, generateSpeakingFeedback, type SpeakingFeedback } from "@/lib/ai/speaking-feedback";
 import { assessPronunciation, isSpeechServiceConfigured } from "@/lib/speech/client";
-import { transcribeGroq } from "@/lib/speech/transcribe";
+import { transcribeRecording } from "@/lib/speech/transcribe";
 import { MAX_AUDIO_BYTES, wavDuration } from "@/lib/speech/speaking-wav";
 import { parseMultipart, readBoundedBody } from "@/lib/http/multipart";
 import { createClient } from "@/lib/supabase/server";
@@ -64,8 +64,8 @@ async function assess(request: Request, signal: AbortSignal) {
 
   const input = parsed.data;
   const usesAi = input.mode === "speaking" && isAiConfigured();
-  const groqKey = input.mode === "speaking" && !input.transcript ? process.env.GROQ_API_KEY : undefined;
-  const feature = usesAi || groqKey ? "speaking" : "pronunciation";
+  const needsStt = input.mode === "speaking" && !input.transcript;
+  const feature = usesAi || needsStt ? "speaking" : "pronunciation";
   await assertQuota(supabase, user.id, feature);
   signal.throwIfAborted();
   let term = "";
@@ -77,8 +77,8 @@ async function assess(request: Request, signal: AbortSignal) {
     term = data.term;
   }
   let transcript = input.mode === "scripted" ? input.text : input.transcript;
-  if (!transcript && groqKey) {
-    transcript = await transcribeGroq(wav, signal);
+  if (!transcript && needsStt) {
+    transcript = await transcribeRecording(wav, signal);
   }
   if (!transcript) return Response.json({ error: "Chưa có bản chép. Nhập câu bạn đã nói rồi thử lại." }, { status: 422 });
   signal.throwIfAborted();

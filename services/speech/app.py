@@ -18,6 +18,7 @@ import pronunciada
 import soundfile as sf
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.responses import Response
+from faster_whisper import WhisperModel
 from kokoro_onnx import Kokoro
 from pydantic import BaseModel, Field
 
@@ -53,10 +54,17 @@ def kokoro() -> Kokoro:
     return Kokoro.from_session(session, f"{MODELS_DIR}/voices-v1.0.bin")
 
 
+@lru_cache(maxsize=1)
+def whisper() -> WhisperModel:
+    threads = int(os.environ.get("WHISPER_THREADS", "4"))
+    return WhisperModel("base.en", device="cpu", compute_type="int8", cpu_threads=threads)
+
+
 @app.on_event("startup")
 def warm_up() -> None:
     # Load both models once so the first user request is not slow.
     kokoro().create("ready", voice="af_heart", speed=1.0, lang="en-us")
+    whisper()
     silence = (np.zeros(16000, dtype=np.float32), 16000)
     try:
         pronunciada.score(silence, "ready")
@@ -159,3 +167,24 @@ async def tts(body: TtsRequest) -> Response:
     out = io.BytesIO()
     sf.write(out, samples, rate, format="MP3")
     return Response(content=out.getvalue(), media_type="audio/mpeg")
+
+
+def transcribe_wav(wav: bytes) -> str:
+    # Decode the 16 kHz mono WAV ourselves (faster-whisper's PyAV decoder is version-sensitive).
+    samples, _rate = sf.read(io.BytesIO(wav), dtype="float32")
+    segments, _info = whisper().transcribe(
+        samples, language="en", beam_size=1, vad_filter=True, condition_on_previous_text=False,
+    )
+    return " ".join(segment.text.strip() for segment in segments).strip()
+
+
+@app.post("/transcribe", dependencies=[Depends(require_token)])
+async def transcribe(audio: UploadFile = File(...)) -> dict:
+    """English speech to text for free answers (no reference text needed)."""
+    data = await audio.read(MAX_AUDIO_BYTES + 1)
+    if len(data) > MAX_AUDIO_BYTES:
+        raise HTTPException(status_code=413, detail="audio too large")
+    async with jobs:
+        wav = await asyncio.to_thread(to_wav_16k, data)
+        text = await asyncio.to_thread(transcribe_wav, wav)
+    return {"text": text}

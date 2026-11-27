@@ -15,7 +15,7 @@ import { FEEDBACK_TONES, type FeedbackTone, type LessonFeedback, type LessonStep
 import { parseMultipart, readBoundedBody } from "@/lib/http/multipart";
 import { assessPronunciation, isSpeechServiceConfigured } from "@/lib/speech/client";
 import { MAX_AUDIO_BYTES, wavDuration } from "@/lib/speech/speaking-wav";
-import { transcribeGroq } from "@/lib/speech/transcribe";
+import { transcribeRecording } from "@/lib/speech/transcribe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -233,10 +233,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ les
         const duration = wavDuration(await input.audio.arrayBuffer());
         if (!duration || duration > 60) return Response.json({ error: "Cần WAV PCM 16 kHz mono, tối đa 60 giây." }, { status: 400 });
         if (!transcript) {
-          if (!process.env.GROQ_API_KEY) return Response.json({ error: "Chưa có bản chép. Nhập câu bạn đã nói rồi thử lại." }, { status: 422 });
+          // Groq first, self-hosted Whisper as fallback; empty only if both fail.
           await assertQuota(db, user.id, "speaking");
           await recordUsage(db, user.id, "speaking");
-          transcript = (await transcribeGroq(input.audio, signal))?.trim().slice(0, 2000) || null;
+          transcript = (await transcribeRecording(input.audio, signal))?.trim().slice(0, 2000) || null;
         }
         if (!transcript) return Response.json({ error: "Chưa có bản chép. Nhập câu bạn đã nói rồi thử lại." }, { status: 422 });
         await assertQuota(db, user.id, "pronunciation");

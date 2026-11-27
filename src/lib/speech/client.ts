@@ -113,3 +113,18 @@ export async function synthesizeSpeech(
   });
   return response.arrayBuffer();
 }
+
+/** English speech to text on the self-hosted service (faster-whisper). Null when unavailable. */
+export async function transcribeSpeech(audio: Blob): Promise<string | null> {
+  if (!isSpeechServiceConfigured()) return null;
+  const form = new FormData();
+  form.append("audio", audio, "recording.wav");
+  try {
+    const response = await call("/transcribe", { method: "POST", body: form });
+    const parsed = z.object({ text: z.string() }).safeParse(await response.json());
+    const text = parsed.success ? parsed.data.text.trim() : "";
+    return text || null;
+  } catch {
+    return null;
+  }
+}
