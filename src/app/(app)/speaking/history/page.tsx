@@ -18,8 +18,8 @@ export default function SpeakingHistoryPage() {
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-black">Lịch sử luyện nói</h1>
-        <Link href="/pronunciation" className={buttonVariants({ variant: "outline" })}>
-          Luyện phát âm
+        <Link href="/courses" className={buttonVariants({ variant: "outline" })}>
+          Luyện nói trong khoá học
         </Link>
       </div>
       <Suspense fallback={<LogoLoader label="Đang tải lịch sử..." />}>

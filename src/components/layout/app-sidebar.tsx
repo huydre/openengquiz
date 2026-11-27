@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BarChart3, BookOpen, GraduationCap, History, Home, Languages, LogOut, Map, Mic, RotateCcw, Search,
+  BarChart3, BookOpen, GraduationCap, History, Home, Languages, LogOut, Map, RotateCcw, Search,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -30,7 +30,6 @@ const ICONS: Record<string, { icon: LucideIcon; color: string }> = {
   "/sets": { icon: BookOpen, color: "text-secondary" },
   "/review": { icon: RotateCcw, color: "text-brand-orange" },
   "/courses": { icon: Map, color: "text-brand-grape" },
-  "/pronunciation": { icon: Mic, color: "text-destructive" },
   "/lookup": { icon: Search, color: "text-secondary" },
   "/history": { icon: History, color: "text-brand-orange" },
   "/stats": { icon: BarChart3, color: "text-primary" },
@@ -38,7 +37,7 @@ const ICONS: Record<string, { icon: LucideIcon; color: string }> = {
 };
 
 /** Learning destinations go first; everything else is listed under "Công cụ". */
-const LEARN = new Set(["/home", "/sets", "/review", "/courses", "/pronunciation"]);
+const LEARN = new Set(["/home", "/sets", "/review", "/courses"]);
 
 const ITEM_CLASS = cn(
   "h-12 gap-3 rounded-2xl border-2 border-transparent px-3 text-sm font-extrabold tracking-wide uppercase",

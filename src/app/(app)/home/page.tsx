@@ -1,7 +1,7 @@
 import { createElement, Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, BookOpen, Check, Flame, GraduationCap, Map as MapIcon, Mic, RotateCcw, Search, Sparkles, type LucideIcon } from "lucide-react";
+import { ArrowRight, BookOpen, Check, Flame, GraduationCap, Map as MapIcon, RotateCcw, Search, Sparkles, type LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { currentStreak, vietnamDay } from "@/lib/srs/activity";
 import { LogoLoader } from "@/components/layout/logo-loader";
@@ -137,9 +137,9 @@ async function HomeContent() {
         <h2 id="practice-title" className="text-xl font-black">Luyện tập nhanh</h2>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <PracticeTile href="/review" icon={RotateCcw} tone="text-brand-orange bg-brand-orange/15" title="Ôn tập" subtitle="Lật thẻ theo lịch" />
-          <PracticeTile href="/pronunciation" icon={Mic} tone="text-destructive bg-destructive/10" title="Phát âm" subtitle="Đọc và được chấm" />
+          <PracticeTile href="/courses" icon={MapIcon} tone="text-brand-grape bg-brand-grape/15" title="Khoá học" subtitle="Nói, học từ, gọi điện AI" />
           <PracticeTile href="/sets" icon={BookOpen} tone="text-secondary bg-secondary/15" title="Bộ từ" subtitle="Học và gọi điện AI" />
-          <PracticeTile href="/lookup" icon={Search} tone="text-brand-grape bg-brand-grape/15" title="Tra từ" subtitle="Nghĩa, ví dụ, phát âm" />
+          <PracticeTile href="/lookup" icon={Search} tone="text-secondary bg-secondary/15" title="Tra từ" subtitle="Nghĩa, ví dụ, phát âm" />
         </div>
       </section>
     </div>
