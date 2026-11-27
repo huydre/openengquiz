@@ -109,7 +109,7 @@ Mọi bảng bật RLS. `word_cache` chỉ server ghi (bằng secret key); `ai_u
 
 Áp `supabase/migrations/20261127160000_courses.sql` trước khi bật Khoá học. Migration xoá metadata và liên kết lộ trình cũ, không xoá `study_sets` hay `cards`. Khi thiếu schema, trang chủ vẫn dùng được nhưng không tải phần Học tiếp.
 
-Cài Bun, chuẩn bị tài khoản hệ thống đã có profile. Đặt `SEED_CONTENT_OWNER_ID` là UUID của profile; cấu hình `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `DEEPSEEK_API_KEY` và `AI_MODEL` trong môi trường chạy hoặc `.env.local`.
+Cài Bun, chuẩn bị tài khoản hệ thống đã có profile. Đặt `SEED_CONTENT_OWNER_ID` là UUID của profile; cấu hình `NEXT_PUBLIC_SUPABASE_URL` và `SUPABASE_SECRET_KEY`. Seed dùng `SEED_AI_BASE_URL`, `SEED_AI_API_KEY` và `SEED_AI_MODEL` cho cả chọn từ lẫn bổ sung thẻ; không dùng cấu hình AI của app. Base URL phải hỗ trợ `/chat/completions`.
 
 ```bash
 pnpm seed:courses --level foundations

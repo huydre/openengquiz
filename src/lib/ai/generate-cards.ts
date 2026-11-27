@@ -27,6 +27,7 @@ interface GenerateOptions {
   userId: string;
   supabase: SupabaseClient;
   seedQuota?: "seed-courses";
+  model?: ReturnType<typeof getModel>;
   signal?: AbortSignal;
 }
 
@@ -37,7 +38,7 @@ interface GenerateOptions {
  * - Topic: generates words for a topic at a given level
  */
 export async function generateCards(options: GenerateOptions): Promise<GeneratedCard[]> {
-  if (!isAiConfigured()) {
+  if (!options.model && !isAiConfigured()) {
     throw new Error("AI chưa được cấu hình. Vui lòng liên hệ quản trị viên.");
   }
 
@@ -71,22 +72,21 @@ export async function generateCards(options: GenerateOptions): Promise<Generated
       { words: missing },
       "You are an English-Vietnamese dictionary. Return at most one card per input term. " +
       "Use only the input terms and preserve their spelling.",
-      beforeRequest, signal,
+      options.model, beforeRequest, signal,
     ) : [];
     cards = mergeWordCards(words, cached, generated);
   } else {
     const instruction = source.type === "text"
       ? "Extract useful English words and phrases for the given CEFR level. For roughly 300 words, aim for 10-20 cards. Use original sentences as examples."
       : "Generate useful English words and phrases for the given topic and CEFR level. Prioritize practical vocabulary.";
-    cards = uniqueCards(await requestCards(source, `${instruction} Return at most 30 cards.`, beforeRequest, signal), existingTerms);
+    cards = uniqueCards(await requestCards(source, `${instruction} Return at most 30 cards.`, options.model, beforeRequest, signal), existingTerms);
   }
 
   if (!seedQuota) await recordUsage(supabase, options.userId, "generate-cards");
   return cards;
 }
 
-async function requestCards(input: object, instruction: string, beforeRequest?: () => Promise<void>, signal?: AbortSignal): Promise<GeneratedCard[]> {
-  const model = getModel();
+async function requestCards(input: object, instruction: string, model = getModel(), beforeRequest?: () => Promise<void>, signal?: AbortSignal): Promise<GeneratedCard[]> {
   const prompt = JSON.stringify(input);
   const system = `${instruction} ${cardInstructions}`;
   for (let attempt = 0; ; attempt++) {
