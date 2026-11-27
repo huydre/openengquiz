@@ -4,7 +4,8 @@ import { safeNextPath } from "./safe-next-path";
  * Who may open which page. Everything is private unless listed here, so new app pages are
  * protected by default.
  */
-const PUBLIC_EXACT = new Set(["/", "/login", "/privacy", "/terms"]);
+// Link preview images are generated routes without a file extension; social crawlers are signed out.
+const PUBLIC_EXACT = new Set(["/", "/login", "/privacy", "/terms", "/opengraph-image", "/twitter-image"]);
 // /api routes check the session themselves and answer JSON (a redirect would break fetch callers).
 const PUBLIC_PREFIXES = ["/auth", "/shared", "/api"];
 /** Pages that make no sense once signed in. */
