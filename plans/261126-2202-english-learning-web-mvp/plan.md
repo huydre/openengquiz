@@ -1,7 +1,8 @@
 # Plan: Web học tiếng Anh: MVP đầy đủ tính năng
 
 - Status: in progress. Phase 09 (lớp học) hoãn theo quyết định của user. Còn phase 10 (extension), phase 11 (deploy), đăng nhập Google và kiểm toàn luồng đăng nhập.
-  **Phase 07 (Grammar, Reading, AI Call): DONE_WITH_CONCERNS**. **Phase 08 (Khoá học IELTS):** cấp `foundations` đã seed; player bảy bước đã triển khai. Cần áp hai migration mới rồi thử luồng đăng nhập với dịch vụ thật.
+  **Phase 07 (Grammar, Reading, AI Call): DONE_WITH_CONCERNS**. **Phase 08 (Khoá học IELTS):** `foundations` có 30 bài đã seed theo mô hình cũ; player v2 dùng bảy hoạt động xen kẽ. Claude áp migration, bổ sung dữ liệu cho `foundations` và hoàn thiện UI; kiểm luồng đăng nhập với dịch vụ thật sau khi bật v2.
+  Sau khi áp `20261127200000_course_activities.sql`, chạy `pnpm seed:lesson-activities --level foundations`. Script chỉ cập nhật bài chưa có nội dung v2, giữ nguyên tám thẻ và tiến độ đã hoàn tất.
 - Ngày: 26/11/2026
 - Research gốc: [docs/openquiz-research.md](../../docs/openquiz-research.md)
 
@@ -43,7 +44,7 @@ Xem dòng Status ở đầu trang và checklist trong từng phase.
 | 5 | AI tạo thẻ (từ, văn bản, chủ đề, ảnh) | 2 | 1 tuần | [phase-05](phase-05-ai-flashcard-generator.md) |
 | 6 | AI Speaking + chấm phát âm | 2, 5 | 1.5 tuần | [phase-06](phase-06-ai-speaking-pronunciation.md) |
 | 7 | AI Grammar, Reading, AI Call | 6 | 1.5 tuần | [phase-07](phase-07-ai-grammar-reading-call.md) |
-| 8 | Khoá học IELTS (7 bước với gia sư AI, tiến độ và sổ từ) | 2, 5, 6, 7 | 1 tuần | [phase-08](phase-08-learning-paths.md) |
+| 8 | Khoá học IELTS (7 hoạt động xen kẽ, tiến độ và sổ từ) | 2, 5, 6, 7 | 1 tuần | [phase-08](phase-08-learning-paths.md) |
 | 9 | Lớp học (**hoãn**) | 3, 4, 8 | 1.5 tuần | [phase-09](phase-09-classroom.md) |
 | 10 | Chrome Extension | 2 | 1.5 tuần | [phase-10](phase-10-chrome-extension.md) |
 | 11 | Landing/SEO, hardening, deploy | tất cả | 1 tuần | [phase-11](phase-11-launch-hardening.md) |

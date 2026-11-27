@@ -123,6 +123,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ les
     if (!admin) return Response.json({ error: "Chưa thể lưu tiến độ." }, { status: 503 });
     const current = await getCourseLesson(db, lessonId);
     if (!current) return Response.json({ error: "Không tìm thấy bài học." }, { status: 404 });
+    if (current.lesson.activity_content) return Response.json({ error: "Bài học đã chuyển sang hoạt động mới. Tải lại trang." }, { status: 409 });
     if (!current.open || current.progress?.completed_at) return Response.json({ error: "Bài học không khả dụng." }, { status: 409 });
 
     const input = await readInput(request, signal);

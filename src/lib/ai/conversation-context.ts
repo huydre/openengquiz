@@ -14,7 +14,7 @@ export interface CallContext {
   scenario: CallScenarioId;
   level: string;
   terms: CallTargetTerm[];
-  /** Lesson warmup question for course calls; undefined for standalone scenarios. */
+  /** Course calls: the lesson's call scenario (v2) or warmup question; undefined for standalone scenarios. */
   topic?: string;
   /** Persisted chat history in display order (created_at, id). */
   messages: CallMessage[];
@@ -58,9 +58,14 @@ export async function loadCallContext(
   }));
   let topic: string | undefined;
   if (scenario.data === "course") {
-    const lesson = await supabase.from("course_lessons").select("warmup_question").eq("set_id", thread.set_id).abortSignal(signal).single();
+    // v2 lessons carry a written call scenario; older lessons fall back to the warmup question.
+    const lesson = await supabase.from("course_lessons").select("warmup_question, activity_content")
+      .eq("set_id", thread.set_id).abortSignal(signal).single();
     if (lesson.error) throw lesson.error;
-    topic = lesson.data.warmup_question;
+    const content = lesson.data.activity_content as { conversation?: unknown } | null;
+    topic = typeof content?.conversation === "string" && content.conversation.trim()
+      ? content.conversation.trim()
+      : lesson.data.warmup_question;
   }
   return { scenario: scenario.data, level, terms, messages: history, topic };
 }

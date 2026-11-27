@@ -4,15 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BookOpen, Check, ChevronDown, Lock, Target, Volume2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LessonActivityList } from "./lesson-activity-list";
+import { activityDescriptors, courseActivityContentSchema, firstUnfinishedActivity, type CourseActivityProgress } from "@/lib/courses/lesson-activities";
 import { playTts } from "@/lib/speech/play-tts";
 import { cn } from "@/lib/utils";
 import { lessonIcon } from "./lesson-icons";
 
 export type CourseLevel = { id: string; title: string; words_target: number; summary: string; entry: string; outcome: string; method: string };
-export type CoursePart = { id: string; title: string; course_lessons: { id: string; title: string; icon: string }[] };
+export type CoursePart = { id: string; title: string; course_lessons: { id: string; title: string; icon: string; activity_content?: unknown }[] };
 export type NotebookCard = { id: string; term: string; ipa: string | null; definition_vi: string | null; score: number | null };
 
 /** Sine-like wave (fraction of the maximum swing) that continues across parts. */
@@ -28,7 +30,7 @@ const BUBBLES = [
 
 type Panel = "levels" | "goals" | "words";
 
-export function CourseMap({ course, courses, level, levels, parts, completed, next, notebook }: {
+export function CourseMap({ course, courses, level, levels, parts, completed, next, notebook, activityByLesson }: {
   course: string;
   courses: { slug: string; title: string }[];
   level: CourseLevel;
@@ -37,6 +39,7 @@ export function CourseMap({ course, courses, level, levels, parts, completed, ne
   completed: string[];
   next?: string;
   notebook: NotebookCard[];
+  activityByLesson: Map<string, CourseActivityProgress[]>;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -139,6 +142,7 @@ export function CourseMap({ course, courses, level, levels, parts, completed, ne
             lessons={part.course_lessons}
             completed={completed}
             next={next}
+            activityByLesson={activityByLesson}
             colorOffset={partIndex}
             waveOffset={parts.slice(0, partIndex).reduce((n, p) => n + p.course_lessons.length, 0)}
           />
@@ -233,13 +237,14 @@ export function CourseMap({ course, courses, level, levels, parts, completed, ne
  * Lessons laid out along an S-curve with a dashed connector drawn through their centres.
  * Completed segments of the connector are green; the current lesson is raised and labelled.
  */
-function LessonTrail({ course, lessons, completed, next, colorOffset, waveOffset }: {
+function LessonTrail({ course, lessons, completed, next, colorOffset, waveOffset, activityByLesson }: {
   course: string;
   lessons: CoursePart["course_lessons"];
   completed: string[];
   next?: string;
   colorOffset: number;
   waveOffset: number;
+  activityByLesson: Map<string, CourseActivityProgress[]>;
 }) {
   const { ref: trackRef, percent: swing } = useSwing();
   const points = lessons.map((_, i) => ({
@@ -276,6 +281,10 @@ function LessonTrail({ course, lessons, completed, next, colorOffset, waveOffset
         const locked = !done && !active;
         const Icon = lessonIcon(lesson.icon);
         const status = done ? "Đã hoàn thành" : active ? "Học tiếp" : "Chưa mở";
+        const content = courseActivityContentSchema.safeParse(lesson.activity_content);
+        const progress = activityByLesson.get(lesson.id) ?? [];
+        const doneCount = progress.filter((row) => row.completed_at).length;
+        const href = `/courses/${course}/lessons/${lesson.id}`;
 
         const card = (
           <>
@@ -286,6 +295,10 @@ function LessonTrail({ course, lessons, completed, next, colorOffset, waveOffset
                 locked ? "bg-muted text-muted-foreground" : BUBBLES[(i + colorOffset) % BUBBLES.length],
               )}
             >
+              {content.success && <svg viewBox="0 0 48 48" className="absolute inset-0 size-full -rotate-90 text-primary" fill="none" stroke="currentColor" strokeWidth="3">
+                <circle cx="24" cy="24" r="22" className="opacity-15" />
+                <circle cx="24" cy="24" r="22" pathLength="7" strokeDasharray={`${doneCount} 7`} />
+              </svg>}
               <Icon className="size-6" />
               {done ? (
                 <span className="bg-primary text-primary-foreground absolute -right-1 -bottom-1 grid size-5 place-items-center rounded-full ring-2 ring-card">
@@ -295,7 +308,7 @@ function LessonTrail({ course, lessons, completed, next, colorOffset, waveOffset
             </span>
             <span className="min-w-0 flex-1">
               <span lang="en" className={cn("line-clamp-2 block leading-tight font-extrabold", locked && "text-muted-foreground")}>{lesson.title}</span>
-              <span className="text-muted-foreground block text-xs font-bold">{status}</span>
+              <span className="text-muted-foreground block text-xs font-bold">{status}{content.success && ` · ${doneCount}/7`}</span>
             </span>
             {locked ? <Lock aria-hidden="true" className="text-muted-foreground size-4 shrink-0" /> : null}
             {active ? (
@@ -318,9 +331,39 @@ function LessonTrail({ course, lessons, completed, next, colorOffset, waveOffset
           <li key={lesson.id}>
             {locked ? (
               <div className={className} style={style}>{card}</div>
+            ) : content.success ? (
+              <Dialog>
+                <DialogTrigger asChild>
+                  <button type="button" className={cn(className, "text-left")} style={style} aria-current={active ? "step" : undefined}>
+                    {card}
+                  </button>
+                </DialogTrigger>
+                <DialogContent aria-describedby={undefined} className="bg-card max-h-[88vh] overflow-auto rounded-3xl border-2 sm:max-w-md [&>*]:min-w-0">
+                  <div className="flex items-center gap-3 pr-8">
+                    <span aria-hidden="true" className={cn("grid size-12 shrink-0 place-items-center rounded-2xl", BUBBLES[(i + colorOffset) % BUBBLES.length])}>
+                      <Icon className="size-6" />
+                    </span>
+                    <div className="min-w-0">
+                      <DialogTitle lang="en" className="text-xl leading-tight font-black">{lesson.title}</DialogTitle>
+                      <p className="text-muted-foreground text-sm font-bold">{doneCount}/7 hoạt động đã xong</p>
+                    </div>
+                  </div>
+                  <LessonActivityList
+                    descriptors={activityDescriptors(content.data)}
+                    doneActivities={new Set(progress.filter((row) => row.completed_at).map((row) => row.activity))}
+                    hrefFor={(activity) => `${href}?activity=${activity}`}
+                  />
+                  <Link
+                    href={`${href}?activity=${firstUnfinishedActivity(progress) ?? 1}`}
+                    className={buttonVariants({ size: "lg", className: "w-full" })}
+                  >
+                    {done ? "Học lại" : doneCount ? "Tiếp tục" : "Bắt đầu"}
+                  </Link>
+                </DialogContent>
+              </Dialog>
             ) : (
               <Link
-                href={`/courses/${course}/lessons/${lesson.id}`}
+                href={href}
                 aria-current={active ? "step" : undefined}
                 aria-label={`${lesson.title}, ${status}`}
                 className={className}

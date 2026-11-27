@@ -8,6 +8,7 @@ import { cardTermKey, type GeneratedCard } from "../src/lib/ai/generated-card-da
 import { assertQuota, recordUsage } from "../src/lib/ai/quota";
 import { parseCourseCatalog } from "../src/lib/courses/course-catalog";
 import { courseCards } from "../src/lib/courses/course-progress";
+import { generateActivityContent } from "./seed-activity-content";
 import { createAdminClient } from "../src/lib/supabase/admin";
 
 async function main() {
@@ -21,6 +22,13 @@ async function main() {
   const model = createDeepSeek({ baseURL, apiKey })(modelId);
   const profile = await supabase.from("profiles").select("id").eq("id", userId).single();
   if (profile.error) throw new Error("Content owner profile not found.");
+
+  // Preflight: the v2 seed RPC is required for activity_content.
+  const probe = await supabase.from("course_lessons").select("activity_content").limit(1);
+  if (probe.error) {
+    throw new Error(`course_lessons.activity_content missing; apply migration 20261127200000_course_activities.sql first. (${probe.error.message})`);
+  }
+
   const { data: existing, error } = await supabase.from("courses")
     .select("course_levels(slug,course_parts(course_lessons(set_id)))").eq("slug", course.slug).maybeSingle();
   if (error) throw error;
@@ -55,11 +63,20 @@ async function main() {
           cards.push(...courseCards(enriched, seen, level.words - cards.length));
         }
         if (cards.length !== level.words) throw new Error(`Incomplete vocabulary: ${question}`);
-        lessons.push({ title, question, icon, cards: cards.map((card) => ({ ...card, term_key: cardTermKey(card.term) })) });
+        if (cards.length !== 8) throw new Error(`Lesson ${title} produced ${cards.length} cards; the activity model requires exactly 8.`);
+        const activity_content = await generateActivityContent(model, userId, supabase, {
+          lessonTitle: title,
+          warmupQuestion: question,
+          cefr: level.cefr,
+          levelTitle: level.title,
+          groupA: cards.slice(0, 4).map((card) => card.term),
+          groupB: cards.slice(4, 8).map((card) => card.term),
+        });
+        lessons.push({ title, question, icon, activity_content, cards: cards.map((card) => ({ ...card, term_key: cardTermKey(card.term) })) });
       }
       parts.push({ title: part.title, lessons });
     }
-    const { data: published, error } = await supabase.rpc("seed_course_level", { p_owner: userId, p_course: course,
+    const { data: published, error } = await supabase.rpc("seed_course_level_v2", { p_owner: userId, p_course: course,
       p_level: { ...level, position, words_target: level.words * 30, parts } });
     if (error) throw error;
     if (!published) throw new Error("Another seed published this level. Restart to reload course vocabulary.");

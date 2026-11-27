@@ -24,7 +24,7 @@ async function CourseContent({ params }: Props) {
   if (profile.error || courses.error) throw new Error("Không tải được khoá học.");
   const current = await getCourse(db, slug, profile.data?.level);
   if (!current?.level) notFound();
-  const map = await courseMap(db, current.level.id);
+  const map = await courseMap(db, current.level.id, user.id);
   const notebook: NotebookCard[] = [];
   for (let start = 0; ; start += 250) {
     const { data: rows, error } = await db.rpc("course_notebook", { p_course: current.course.id }).range(start, start + 249);
@@ -33,5 +33,5 @@ async function CourseContent({ params }: Props) {
     if (rows.length < 250) break;
   }
   return <CourseMap course={slug} courses={courses.data} level={current.level} levels={current.levels}
-    parts={map.parts} completed={[...map.completed]} next={map.next} notebook={notebook} />;
+    parts={map.parts} completed={[...map.completed]} next={map.next} notebook={notebook} activityByLesson={map.activityByLesson} />;
 }

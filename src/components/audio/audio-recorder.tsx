@@ -29,8 +29,9 @@ export function AudioRecorder({ onRecording, transcribe = false, disabled = fals
   disabled?: boolean;
   startLabel?: string;
   recordingLabel?: string;
-  /** "compact": a single round mic button with timer and level ring (chat composers). */
-  variant?: "default" | "compact";
+  /** "compact": a single round mic button with timer and level ring (chat composers).
+   *  "wide": one large full-width talk button; recording shows a stop label, timer and level bar inside it. */
+  variant?: "default" | "compact" | "wide";
 }) {
   const [phase, setPhase] = useState<"idle" | "starting" | "recording" | "stopping">("idle");
   const [consent, setConsent] = useState(false);
@@ -218,6 +219,24 @@ export function AudioRecorder({ onRecording, transcribe = false, disabled = fals
             {phase === "recording" ? `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")} / 1:00` : phase === "idle" ? "Bấm để nói" : ""}
           </span>
         </div>
+      ) : variant === "wide" ? (
+        <button
+          type="button"
+          aria-label={phase === "recording" ? "Dừng và gửi" : startLabel}
+          disabled={phase === "starting" || phase === "stopping" || (disabled && phase !== "recording")}
+          onClick={() => phase === "recording" ? stop.current?.() : requestRecording()}
+          className={`relative flex h-12 w-full items-center justify-center gap-2 overflow-hidden rounded-2xl text-base font-extrabold text-white transition-[transform,box-shadow] active:translate-y-1 active:shadow-none disabled:opacity-50 ${phase === "recording" ? "bg-destructive shadow-[0_4px_0_color-mix(in_oklch,var(--destructive)_70%,black)]" : "bg-primary shadow-[0_4px_0_var(--primary-edge)]"}`}
+        >
+          {phase === "recording" ? <Square aria-hidden="true" className="size-4 fill-current" /> : phase === "idle" ? <Mic aria-hidden="true" className="size-5" /> : null}
+          {phase === "recording"
+            ? <span className="tabular-nums">Dừng · {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}</span>
+            : phase === "starting" ? "Đang mở mic..." : phase === "stopping" ? "Đang xử lý..." : startLabel}
+          {phase === "recording" ? (
+            <span aria-hidden="true" className="absolute inset-x-6 bottom-1.5 h-1 overflow-hidden rounded-full bg-white/30">
+              <span className="block h-full rounded-full bg-white transition-[width] duration-100" style={{ width: `${Math.min(100, level * 600)}%` }} />
+            </span>
+          ) : null}
+        </button>
       ) : (
       <div className="flex flex-wrap items-center gap-3">
         <Button type="button" disabled={phase === "starting" || phase === "stopping" || (disabled && phase !== "recording")}

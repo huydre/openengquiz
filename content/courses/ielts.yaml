@@ -287,7 +287,7 @@ levels:
   - slug: band-45-55
     title: Band 4.5 đến 5.5
     cefr: B1
-    words: 10
+    words: 8
     summary: Phát triển ý bằng chi tiết, ví dụ và trình tự rõ.
     entry: Nói được vài câu nối nhau về chủ đề quen thuộc.
     outcome: Kể một trải nghiệm mạch lạc và trả lời câu hỏi tiếp nối.
@@ -428,7 +428,7 @@ levels:
   - slug: band-6
     title: Band 6
     cefr: B2
-    words: 10
+    words: 8
     summary: Nêu quan điểm có đối chiếu và ví dụ đúng trọng tâm.
     entry: Kể được trải nghiệm và giải thích lý do trên vài chủ đề quen thuộc.
     outcome: Phát triển luận điểm có so sánh, điều kiện và hệ quả cụ thể.
@@ -569,7 +569,7 @@ levels:
   - slug: band-7
     title: Band 7
     cefr: C1
-    words: 10
+    words: 8
     summary: Lập luận linh hoạt và xử lý câu hỏi phản biện.
     entry: Diễn giải được hai mặt của vấn đề và đưa ví dụ phù hợp.
     outcome: Nêu sắc thái, ngoại lệ và điều kiện mà không mất mạch lập luận.
@@ -710,7 +710,7 @@ levels:
   - slug: advanced-1
     title: Nâng cao 1
     cefr: C1
-    words: 10
+    words: 8
     summary: Xử lý chủ đề trừu tượng và phân biệt lập luận với bằng chứng.
     entry: Dùng được lập luận có điều kiện và diễn đạt lại khi thiếu từ.
     outcome: Phân tích giả định, độ chắc chắn và tác dụng ngoài dự kiến.
@@ -851,7 +851,7 @@ levels:
   - slug: advanced-2
     title: Nâng cao 2
     cefr: C2
-    words: 10
+    words: 8
     summary: Nói tự nhiên, chính xác và có chiều sâu khi quan điểm xung đột.
     entry: Phân biệt được giả định với bằng chứng và giữ mạch nói khi phản biện.
     outcome: Điều chỉnh sắc thái, độ chắc chắn và cách trình bày trong câu hỏi khó.

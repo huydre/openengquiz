@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "typecheck": "next typegen && tsc --noEmit",
-    "seed:courses": "bun --conditions=react-server scripts/seed-courses.ts"
+    "seed:courses": "bun --conditions=react-server scripts/seed-courses.ts",
+    "seed:lesson-activities": "bun --conditions=react-server scripts/seed-lesson-activities.ts"
   },
   "dependencies": {
     "@ai-sdk/deepseek": "^3.0.91",

@@ -22,14 +22,16 @@ type Status = "loading" | "playing" | "paused" | "finishing" | "error";
 export function TutorNarration({
   lines,
   onComplete,
+  initialSpeed = 1,
 }: {
   lines: NarrationLine[];
   onComplete: () => void | Promise<void>;
+  initialSpeed?: TtsSpeed;
 }) {
   const [index, setIndex] = useState(0);
   const [replayNonce, setReplayNonce] = useState(0);
   const [status, setStatus] = useState<Status>("loading");
-  const [speed, setSpeed] = useState<TtsSpeed>(1);
+  const [speed, setSpeed] = useState<TtsSpeed>(initialSpeed);
   const [showVi, setShowVi] = useState(true);
   const [error, setError] = useState("");
   const [errorKind, setErrorKind] = useState<"audio" | "progress">("audio");

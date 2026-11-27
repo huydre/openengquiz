@@ -72,10 +72,17 @@ CLI tự đặt file theo loại item: `registry:ui` vào `src/components/ui/`, 
 
 ### Player Khoá học IELTS
 
-- Bảy bước: gia sư mở đầu, nói hoặc nhập lần 1, nhận xét, gia sư chuyển đoạn, lật thẻ, đọc từng từ, nói lại và hội thoại. Bài sau mở khi hoàn thành bài hiện tại.
-- `TutorNarration` (`src/components/tutor/tutor-narration.tsx`) nhận các cặp `{ en, vi }` và `onComplete`. Đọc nối tiếp, có tạm dừng, nghe lại, bỏ qua, tốc độ và phụ đề. Vòng sáng và mặt gia sư tôn trọng `prefers-reduced-motion`. Cache lời dẫn theo bài và loại đoạn; tiếng đọc cache theo giọng, văn bản và tốc độ.
-- `advance_course_lesson` chỉ gọi từ server. Hai lượt trả lời và các lần thử lại lưu bằng `speaking_attempts.lesson_id`; lịch sử không giữ tệp âm thanh. Giọng góp ý lưu theo tài khoản. CEFR và điểm là ước lượng từ câu trả lời, không phải điểm thi IELTS chính thức.
-- Bước đọc từ dùng ngưỡng 70%, cho bỏ qua sau ba lượt chưa đạt, rồi đưa thẻ vào SRS. Hội thoại nhận 4 hoặc 5 lượt trả lời; server chốt cuộc gọi trước khi hoàn thành bài.
+- Player dùng bảy hoạt động xen kẽ; học viên chọn bất kỳ hoạt động nào trong bài đã mở. Bài kế tiếp chỉ mở khi đủ bảy hoạt động hoàn tất. Nguồn thứ tự và bước nhỏ: `src/lib/courses/lesson-activities.ts`.
+- `advance_course_activity` là RPC tiến độ chỉ dành cho service role. Lượt nói v2 lưu theo bài, hoạt động và bước nhỏ; API lưu câu trả lời trước, chấm sau để không chặn chuyển bước. Band chỉ là ước lượng luyện tập, không phải điểm IELTS chính thức.
+- `TutorNarration` nhận phụ đề `{ en, vi }` và `onComplete`; phát lại, đổi tốc độ và bỏ qua dùng chung với player cũ. Tiếng đọc cache theo giọng, văn bản và tốc độ.
+- Chỉ chuyển sang player v2 khi bài có `activity_content`. Giữ luồng cũ trước khi áp migration và bổ sung nội dung. Hai nhóm từ v2 ghi danh SRS riêng; hội thoại dùng `CallSession` và dấu hoàn tất xác nhận ở server.
+
+### Hội thoại AI
+
+- `CallSession` dùng chung cho bộ từ và bài IELTS. Mặc định là màn gọi ẩn câu gia sư; chat cho phép tra từng từ, gõ và xin nhận xét theo lượt.
+- `useCallMic` ghi WAV trong trình duyệt. Mở mic sau khi giọng gia sư dừng; ngắt lời bằng nút hoặc Enter. VAD tự gửi sau khoảng 1,2 giây im sau tiếng nói, hoặc mời thử lại nếu không nghe tiếng nói trong khoảng 8 giây. Không lưu bản ghi.
+- Route `/api/conversation/[threadId]/turn` gửi bản chép trước rồi stream câu trả lời. `createCallReplyAudio` phát câu hoàn chỉnh đầu tiên khi stream chưa xong, nạp trước các câu sau. Không phụ thuộc vào việc người học mở chat hay gợi ý.
+- `useCallSession` giữ tiến độ, trạng thái gọi và vòng đời audio, không phụ thuộc markup. `useCallAssist` tải trợ giúp theo chỉ số tin đã lưu. Gợi ý từ được lưu trong `chat_messages.suggested_terms` cùng tin gia sư; `done` chỉ gửi sau khi ghi thành công.
 
 ### Lint với code vendor
 
