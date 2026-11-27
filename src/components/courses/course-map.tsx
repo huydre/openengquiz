@@ -12,6 +12,7 @@ import { activityDescriptors, courseActivityContentSchema, firstUnfinishedActivi
 import { playTts } from "@/lib/speech/play-tts";
 import { cn } from "@/lib/utils";
 import { lessonIcon } from "./lesson-icons";
+import { Ipa } from "@/components/vocab/ipa-text";
 
 export type CourseLevel = { id: string; title: string; words_target: number; summary: string; entry: string; outcome: string; method: string };
 export type CoursePart = { id: string; title: string; course_lessons: { id: string; title: string; icon: string; activity_content?: unknown }[] };
@@ -204,7 +205,7 @@ export function CourseMap({ course, courses, level, levels, parts, completed, ne
               {notebook.map((word) => (
                 <li key={word.id} className="flex items-center justify-between gap-3 py-2">
                   <div>
-                    <strong lang="en">{word.term}</strong> <span className="text-muted-foreground">{word.ipa}</span>
+                    <strong lang="en">{word.term}</strong> <span className="text-muted-foreground"><Ipa value={word.ipa} /></span>
                     <p className="text-muted-foreground text-sm">
                       {word.definition_vi}
                       {word.score !== null ? ` · Phát âm ${Math.round(word.score * 100)}/100` : ""}

@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { Quote, RotateCcw, Volume2 } from "lucide-react";
 import { playTts, type TtsAccent } from "@/lib/speech/play-tts";
 import type { LessonCard } from "./vocab-lesson";
+import { Ipa } from "@/components/vocab/ipa-text";
 
 /**
  * Two-sided vocabulary card with a 3D flip (same technique as Watermelon's flip-card:
@@ -59,7 +60,7 @@ export function FlipFlashcard({ card, flipped, onFlip, accent = "en-US", autoPla
             <span className="bg-secondary/10 text-secondary rounded-full px-3 py-1 text-xs font-extrabold">{card.part_of_speech}</span>
           ) : null}
           <p lang="en" className="text-5xl font-black break-words">{card.term}</p>
-          {card.ipa ? <p className="text-muted-foreground text-lg">{card.ipa}</p> : null}
+          {card.ipa ? <p className="text-muted-foreground text-lg"><Ipa value={card.ipa} /></p> : null}
           <button
             type="button"
             aria-label={`Nghe phát âm ${card.term}`}

@@ -11,6 +11,7 @@ import { highlightPhrases, splitQuestion } from "@/lib/courses/course-question";
 import type { FeedbackTone, LessonComparison, LessonFeedback, LessonIdea } from "@/lib/courses/lesson-player-types";
 import { playTts } from "@/lib/speech/play-tts";
 import { lookupResultSchema, type LookupResult } from "@/lib/vocab/lookup-term";
+import { Ipa } from "@/components/vocab/ipa-text";
 
 const toneLabels: Record<FeedbackTone, string> = { serious: "Nghiêm túc", friendly: "Thân thiện", funny: "Hài hước" };
 
@@ -46,7 +47,7 @@ function WordMeaning({ term }: { term: string }) {
     return () => controller.abort();
   }, [term]);
   return <div className="space-y-2">
-    <div className="flex flex-wrap items-baseline gap-2"><strong lang="en">{term}</strong>{result?.ipa && <span>{result.ipa}</span>}</div>
+    <div className="flex flex-wrap items-baseline gap-2"><strong lang="en">{term}</strong>{result?.ipa && <span><Ipa value={result.ipa} /></span>}</div>
     {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : result ? (
       <p>{result.definition_vi ?? result.definition_en ?? "Chưa có nghĩa cho từ này."}</p>
     ) : <LogoLoader size="sm" label="Đang tra nghĩa" />}

@@ -9,6 +9,8 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
+  /* System fonts that include IPA symbols; the app font does not. */
+  --font-ipa: "Charis SIL", "Doulos SIL", "Segoe UI", "Helvetica Neue", Helvetica, Arial, "Noto Sans", sans-serif;
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -208,4 +210,10 @@
   .tutor-bob {
     animation: none;
   }
+}
+
+/* IPA needs a font with phonetic symbols; the app font lacks them (stress marks rendered with gaps). */
+.font-ipa {
+  font-family: "Charis SIL", "Doulos SIL", "Segoe UI", "Helvetica Neue", Helvetica, Arial, "Noto Sans", sans-serif;
+  letter-spacing: 0;
 }

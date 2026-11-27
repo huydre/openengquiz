@@ -8,6 +8,7 @@ import Container from "./container";
 import Heading from "./heading";
 import SubHeading from "./subheading";
 import { DotGrid } from "./decor";
+import { Ipa } from "@/components/vocab/ipa-text";
 
 const ROTATING_GOALS = ["IELTS", "TOEIC", "THPT", "giao tiếp"] as const;
 
@@ -45,7 +46,7 @@ function WordCard({ card }: { card: (typeof WORD_CARDS)[number] }) {
       </span>
       <div>
         <div className="text-foreground font-sans text-lg font-extrabold sm:text-2xl">{card.term}</div>
-        {card.ipa && <div className="font-mono text-xs text-white/40">{card.ipa}</div>}
+        {card.ipa && <div className="font-mono text-xs text-white/40"><Ipa value={card.ipa} /></div>}
       </div>
       <div className="font-mono text-xs text-white/70 sm:text-sm">{card.vi}</div>
     </div>

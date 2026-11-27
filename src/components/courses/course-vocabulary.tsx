@@ -13,6 +13,7 @@ import type { PronunciationResult } from "@/lib/speech/client";
 import { playTts } from "@/lib/speech/play-tts";
 import { pronunciationHint } from "@/lib/speech/pronunciation-hints";
 import { cn } from "@/lib/utils";
+import { Ipa } from "@/components/vocab/ipa-text";
 
 const panel = "space-y-5 rounded-3xl border-2 bg-card p-5 sm:p-7";
 const percent = (score: number) => Math.round(score * 100);
@@ -185,7 +186,7 @@ function ReadWord({ card, speech, onNext, saving, last }: {
     }
   }} tabIndex={result ? 0 : undefined} ref={result ? (node) => { node?.focus({ preventScroll: true }); } : undefined}>
     <div className="flex flex-wrap items-end justify-between gap-3 rounded-2xl border bg-primary/5 p-4">
-      <div className="space-y-1"><p lang="en" className="text-3xl font-black">{card.term}</p>{card.ipa && <p className="text-muted-foreground">{card.ipa}</p>}{card.definition_vi && <p>{card.definition_vi}</p>}</div>
+      <div className="space-y-1"><p lang="en" className="text-3xl font-black">{card.term}</p>{card.ipa && <p className="text-muted-foreground"><Ipa value={card.ipa} /></p>}{card.definition_vi && <p>{card.definition_vi}</p>}</div>
       <Button type="button" size="sm" variant="outline" onClick={() => void playTts(card.term)}><Volume2 aria-hidden="true" /> Nghe mẫu</Button>
     </div>
     {!speech ? <p role="status" className="text-muted-foreground">Chưa có dịch vụ chấm. Hãy nghe mẫu và đọc theo.</p> : result ? <WordScore result={result.pron} audioUrl={result.url} /> : <>

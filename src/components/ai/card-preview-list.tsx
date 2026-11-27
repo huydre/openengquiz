@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { GeneratedCard } from "@/lib/ai/generated-card-data";
 import { Button } from "@/components/ui/button";
+import { Ipa } from "@/components/vocab/ipa-text";
 
 type CardWithSelection = GeneratedCard & { _excluded?: boolean };
 
@@ -171,7 +172,7 @@ export function CardPreviewList({ cards, onChange }: CardPreviewListProps) {
                 {card.part_of_speech || card.ipa ? (
                   <p className="text-muted-foreground text-xs">
                     {card.part_of_speech && <span className="mr-2">{card.part_of_speech}</span>}
-                    {card.ipa && <span className="italic">{card.ipa}</span>}
+                    {card.ipa && <span className="italic"><Ipa value={card.ipa} /></span>}
                   </p>
                 ) : null}
                 {card.example_en ? (

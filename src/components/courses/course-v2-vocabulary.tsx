@@ -29,6 +29,7 @@ import { PASS_SCORE } from "@/components/vocab/pronounce-step";
 import { cn } from "@/lib/utils";
 import { CourseV2Speaking } from "./course-v2-speaking";
 import type { ActivityPostFn } from "./use-lesson-activities";
+import { Ipa } from "@/components/vocab/ipa-text";
 
 const panel = "space-y-5 rounded-3xl border-2 bg-card p-5 sm:p-7";
 const percent = (score: number) => Math.round(score * 100);
@@ -588,7 +589,7 @@ function SayWordStep({ card, speech, post, activity, smallStep, busy, onDone }: 
       <div className="space-y-1">
         <p lang="en" className="text-4xl font-black sm:text-5xl">{card.term}</p>
         <p className="text-muted-foreground flex items-center justify-center gap-2 text-lg">
-          {card.ipa}
+          <Ipa value={card.ipa} />
           <button type="button" aria-label={`Nghe ${card.term}`} onClick={() => void playTts(card.term)} className="text-secondary hover:bg-muted grid size-9 place-items-center rounded-full">
             <Volume2 aria-hidden="true" className="size-5" />
           </button>
@@ -745,7 +746,7 @@ function WordHeading({ card }: { card: LessonCard }) {
           <Volume2 aria-hidden="true" className="size-5" />
         </button>
       </div>
-      <p className="text-muted-foreground text-sm">{card.part_of_speech ?? "word"}{card.ipa ? ` - ${card.ipa}` : ""}</p>
+      <p className="text-muted-foreground text-sm">{card.part_of_speech ?? "word"}{card.ipa ? <> - <Ipa value={card.ipa} /></> : null}</p>
     </div>
   );
 }
@@ -841,7 +842,7 @@ function FillPhase({ step, cards, state, busy, onAdvance }: {
         <p lang="en" className="text-2xl leading-snug font-black sm:text-3xl">
           {cloze ? <>{cloze.before} <span className="border-foreground/60 inline-block min-w-24 border-b-4 align-baseline" aria-label="chỗ trống">&nbsp;</span> {cloze.after}</> : card.example_en}
         </p>
-        <p className="text-muted-foreground text-sm">{card.part_of_speech ?? "word"}{card.ipa ? ` - ${card.ipa}` : ""}</p>
+        <p className="text-muted-foreground text-sm">{card.part_of_speech ?? "word"}{card.ipa ? <> - <Ipa value={card.ipa} /></> : null}</p>
       </div>
       {result ? (
         <>

@@ -7,6 +7,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { CardEditor } from "./card-editor";
 import { deleteCard, moveCard } from "./card-actions";
 import type { CardRecord } from "./card-record";
+import { Ipa } from "@/components/vocab/ipa-text";
 
 export function CardList({ setId, cards }: { setId: string; cards: CardRecord[] }) {
   const router = useRouter();
@@ -33,7 +34,7 @@ export function CardList({ setId, cards }: { setId: string; cards: CardRecord[] 
         {cards.map((card, index) => (
           <li key={card.id} className="rounded-3xl border-2 bg-card p-4 shadow-[0_4px_0_var(--border)]">
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0 flex-1"><p className="text-lg font-extrabold">{index + 1}. {card.term} <span className="text-muted-foreground text-sm font-normal">{card.ipa}</span></p><p>{card.definition_vi || card.definition_en || "Chưa có nghĩa"}</p></div>
+              <div className="min-w-0 flex-1"><p className="text-lg font-extrabold">{index + 1}. {card.term} <span className="text-muted-foreground text-sm font-normal"><Ipa value={card.ipa} /></span></p><p>{card.definition_vi || card.definition_en || "Chưa có nghĩa"}</p></div>
               <div className="flex flex-wrap gap-2">
                 {card.example_en && (
                   <Link href={`/pronunciation?cardId=${card.id}`} className={buttonVariants({ size: "sm", variant: "outline" })}>

@@ -10,6 +10,7 @@ import type { CourseSpeakingQuestion } from "@/lib/courses/lesson-activities";
 import type { FeedbackTone, LessonFeedback, LessonIdea } from "@/lib/courses/lesson-player-types";
 import { playTts } from "@/lib/speech/play-tts";
 import { lookupResultSchema, type LookupResult } from "@/lib/vocab/lookup-term";
+import { Ipa } from "@/components/vocab/ipa-text";
 
 const toneLabels: Record<FeedbackTone, string> = { serious: "Nghiêm túc", friendly: "Thân thiện", funny: "Hài hước" };
 
@@ -34,7 +35,7 @@ function WordMeaning({ term }: { term: string }) {
   }, [term]);
   return <div className="space-y-2">
     {result ? <>
-      <p className="font-black" lang="en">{result.term}{result.ipa && <span className="ml-2 font-normal text-muted-foreground">{result.ipa}</span>}</p>
+      <p className="font-black" lang="en">{result.term}{result.ipa && <span className="ml-2 font-normal text-muted-foreground"><Ipa value={result.ipa} /></span>}</p>
       {result.part_of_speech && <p className="text-sm text-muted-foreground">{result.part_of_speech}</p>}
       {result.definition_vi && <p lang="vi">{result.definition_vi}</p>}
       {result.definition_en && <p lang="en" className="text-sm">{result.definition_en}</p>}
@@ -251,7 +252,7 @@ export function CourseV2Speaking({
         </h2>
         {showTranslation ? <p className="text-muted-foreground font-semibold">{translation}</p> : null}
         {targetTerm ? (
-          <p className="text-muted-foreground text-sm">Hãy thử dùng <strong lang="en" className="text-foreground">{targetTerm}</strong>{targetIpa ? <> - {targetIpa}</> : null} trong câu trả lời</p>
+          <p className="text-muted-foreground text-sm">Hãy thử dùng <strong lang="en" className="text-foreground">{targetTerm}</strong>{targetIpa ? <> - <Ipa value={targetIpa} /></> : null} trong câu trả lời</p>
         ) : terms.length > 0 ? (
           <p className="text-muted-foreground text-sm">Thử dùng từ vừa học: <strong lang="en" className="text-foreground">{terms.join(", ")}</strong></p>
         ) : null}

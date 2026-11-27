@@ -9,6 +9,7 @@ import { enrollLearnedCards } from "@/app/(app)/sets/review-actions";
 import { playTts, type TtsAccent } from "@/lib/speech/play-tts";
 import { cn } from "@/lib/utils";
 import { PASS_SCORE, PronounceStep } from "./pronounce-step";
+import { Ipa } from "@/components/vocab/ipa-text";
 
 export type LessonCard = {
   id: string;
@@ -199,7 +200,7 @@ function WordDetails({ card, accent }: { card: LessonCard; accent: TtsAccent }) 
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-3">
         <h2 lang="en" className="text-4xl font-black">{card.term}</h2>
-        {card.ipa ? <span className="text-muted-foreground text-lg">{card.ipa}</span> : null}
+        {card.ipa ? <span className="text-muted-foreground text-lg"><Ipa value={card.ipa} /></span> : null}
         {card.part_of_speech ? (
           <span className="bg-secondary/15 text-secondary rounded-full px-3 py-0.5 text-sm font-bold">{card.part_of_speech}</span>
         ) : null}
