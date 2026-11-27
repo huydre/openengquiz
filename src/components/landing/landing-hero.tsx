@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ArrowRight, Bus, Flame, Mic, Sparkles, Volume2 } from "lucide-react";
 import { Ipa } from "@/components/vocab/ipa-text";
+import { FlipText } from "@/components/obsidian/flip-text";
+import { VocabMarquee } from "./vocab-marquee";
 
 const PRIMARY_CTA = "bg-primary text-primary-foreground inline-flex h-14 items-center justify-center gap-2 rounded-2xl px-8 text-base font-extrabold uppercase shadow-[0_5px_0_var(--primary-edge)] transition-[filter] hover:brightness-105 active:translate-y-1 active:shadow-none";
 const SECONDARY_CTA = "bg-card hover:bg-muted inline-flex h-14 items-center justify-center rounded-2xl border-2 px-8 text-base font-extrabold uppercase shadow-[0_5px_0_var(--border)] active:translate-y-1 active:shadow-none";
@@ -17,7 +19,7 @@ export function LandingHero() {
             <Sparkles aria-hidden="true" className="size-4" /> Miễn phí, không quảng cáo
           </p>
           <h1 className="mt-6 text-5xl leading-[1.05] font-black tracking-tight text-balance sm:text-6xl">
-            Học từ nào, <span className="text-primary">nói</span> từ đó.
+            Học từ nào, <FlipText className="text-primary" duration={3}>nói</FlipText> từ đó.
           </h1>
           <p className="text-muted-foreground mx-auto mt-5 max-w-xl text-lg leading-relaxed lg:mx-0">
             Mỗi bài học đưa bạn từ thẻ từ vựng đến nói thành câu và gọi điện với gia sư AI, dùng đúng những từ vừa học. Lộ trình IELTS từ lấy gốc đến nâng cao.
@@ -28,6 +30,9 @@ export function LandingHero() {
           </div>
         </div>
         <HeroVisual />
+      </div>
+      <div className="relative pb-16">
+        <VocabMarquee />
       </div>
     </section>
   );

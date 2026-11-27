@@ -27,6 +27,7 @@
     "ai": "^7.0.183",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.2",
+    "gsap": "^3.15.1",
     "lucide-react": "^1.81.0",
     "motion": "^14.14.0",
     "next": "16.4.6",
@@ -44,6 +45,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@ai-sdk/openai-compatible": "^3.0.96",
     "@tailwindcss/turbopack": "4.3.3",
     "@types/node": "^20",
     "@types/react": "^19",

@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import Link from "next/link";
 import { cacheLife } from "next/cache";
-import { ArrowRight, BookOpen, CalendarClock, Check, Coffee, ImageIcon, Laptop, Mic, Phone, Plane, Search, Trophy } from "lucide-react";
+import { BookOpen, CalendarClock, Check, Coffee, ImageIcon, Laptop, Mic, Phone, Plane, Search, Trophy } from "lucide-react";
+import { DiscoverButton } from "@/components/obsidian/discover-button";
 import { parseCourseCatalog } from "@/lib/courses/course-catalog";
 import { cn } from "@/lib/utils";
 
@@ -162,12 +162,9 @@ export function LandingFinalCta() {
         <div aria-hidden="true" className="absolute -bottom-20 -left-10 size-56 rounded-full bg-white/10" />
         <h2 className="relative text-4xl font-black tracking-tight text-balance">Bắt đầu với từ đầu tiên hôm nay</h2>
         <p className="relative mx-auto mt-3 max-w-xl text-lg font-semibold opacity-90">Miễn phí, chỉ cần một tài khoản. Mỗi ngày vài phút là đủ.</p>
-        <Link
-          href="/login"
-          className="text-primary-edge relative mt-8 inline-flex h-14 items-center gap-2 rounded-2xl bg-white px-8 text-base font-extrabold uppercase shadow-[0_5px_0_rgb(0_0_0/0.15)] active:translate-y-1 active:shadow-none"
-        >
-          Tạo tài khoản miễn phí <ArrowRight aria-hidden="true" className="size-5" />
-        </Link>
+        <div className="relative mt-8">
+          <DiscoverButton href="/login" label="Tạo tài khoản miễn phí" className="landing-discover" />
+        </div>
       </div>
     </section>
   );
