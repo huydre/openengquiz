@@ -907,14 +907,18 @@ function WordSpeakingPhase({ lessonId, step, cards, state, speech, ai, tone, pos
   if (!question) return <LogoLoader label={`Đang tạo câu hỏi Speaking cho từ "${card.term}"...`} />;
 
   const skip = () => onSkip({ index: slot + 1, results: { ...state.results, [card.id]: {} } });
+  // Out of AI speaking quota: like the reference flow, explain the limit and offer Skip only.
+  if (limited) {
+    return (
+      <div className="bg-card space-y-4 rounded-3xl border-2 p-6 text-center">
+        <p className="font-bold">Tính năng Speaking với AI đã hết lượt hôm nay.</p>
+        <p className="text-muted-foreground text-sm">Bạn có thể bỏ qua bước này và tiếp tục bài học. Lượt sẽ được làm mới vào ngày mai.</p>
+        <Button type="button" size="lg" disabled={busy} onClick={skip}>Bỏ qua</Button>
+      </div>
+    );
+  }
   return (
     <div className="space-y-4">
-    {limited ? (
-      <div className="border-accent/50 bg-accent/10 flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 p-4">
-        <p className="text-sm font-bold">Bạn đã dùng hết lượt luyện nói với AI hôm nay. Có thể trả lời câu hỏi đơn giản bên dưới hoặc bỏ qua bước này.</p>
-        <Button type="button" variant="outline" disabled={busy} onClick={skip}>Bỏ qua</Button>
-      </div>
-    ) : null}
     <CourseV2Speaking
       key={`${card.id}-${step}`}
       lessonId={lessonId}
