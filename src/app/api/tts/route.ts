@@ -8,6 +8,8 @@ import { isSpeechServiceConfigured, synthesizeSpeech, TTS_VOICES } from "@/lib/s
 import { ttsHashPreimage } from "@/lib/speech/tts-cache-key";
 
 const BUCKET = "tts";
+// Bump when the primary voice engine changes so older audio is regenerated.
+const CACHE_PREFIX = "v2";
 const requestSchema = z.object({
   text: z.string().trim().min(1).max(300),
   voice: z.enum(TTS_VOICES).default("af_heart"),
@@ -21,8 +23,10 @@ type Resolved =
   | { kind: "error"; response: Response };
 
 /**
- * Finds or creates MP3 audio for a text. Audio is generated once with Kokoro and cached in
- * Supabase Storage under a hash of voice + speed + text, so repeated sentences cost nothing.
+ * Finds or creates MP3 audio for a text. Audio is generated once (openai.fm voices, Kokoro as
+ * fallback) and cached in Supabase Storage under a hash of voice + speed + text, so repeated
+ * sentences cost nothing. Fallback audio is not cached, so the sentence gets the primary
+ * voice once that engine is reachable again.
  * Fresh audio is returned immediately; the Storage upload and quota bookkeeping run after
  * the response so the learner does not wait for them.
  */
@@ -36,7 +40,7 @@ async function resolveAudio(input: TtsRequest): Promise<Resolved> {
     return { kind: "error", response: Response.json({ error: "Giọng đọc chưa sẵn sàng." }, { status: 503 }) };
   }
 
-  const path = `${voice}/${createHash("sha256").update(ttsHashPreimage(voice, text, speed)).digest("hex")}.mp3`;
+  const path = `${CACHE_PREFIX}/${voice}/${createHash("sha256").update(ttsHashPreimage(voice, text, speed)).digest("hex")}.mp3`;
   const storage = admin.storage.from(BUCKET);
   const url = storage.getPublicUrl(path).data.publicUrl;
 
@@ -53,10 +57,12 @@ async function resolveAudio(input: TtsRequest): Promise<Resolved> {
 
   try {
     await assertQuota(supabase, user.id, "tts");
-    const audio = await synthesizeSpeech(text, voice, speed);
+    const { audio, engine } = await synthesizeSpeech(text, voice, speed);
     after(async () => {
-      const { error } = await storage.upload(path, audio, { contentType: "audio/mpeg", upsert: true });
-      if (error) console.error("TTS cache upload failed", error.message);
+      if (engine === "openai-fm") {
+        const { error } = await storage.upload(path, audio, { contentType: "audio/mpeg", upsert: true });
+        if (error) console.error("TTS cache upload failed", error.message);
+      }
       await recordUsage(supabase, user.id, "tts").catch(() => {});
     });
     return { kind: "fresh", audio, url };

@@ -41,7 +41,7 @@ Thay Azure Speech bằng mã nguồn mở, chạy Docker trên VPS. Lý do chọ
 | `GET /health` | Kiểm tra sống |
 | `POST /assess` (multipart `audio`, `text`, `strictness`) | Chấm phát âm theo câu mẫu (Pronunciada): điểm câu, accuracy, fluency, completeness, điểm từng từ/âm, danh sách lỗi `issues` |
 | `POST /transcribe` (multipart `audio`) | Chép lời tiếng Anh (faster-whisper `base.en`), dự phòng khi không dùng được Groq |
-| `POST /tts` (JSON `text`, `voice`, `speed`) | Đọc chữ thành MP3 (Kokoro; giọng `af_*`/`am_*` Mỹ, `bf_*`/`bm_*` Anh) |
+| `POST /tts` (JSON `text`, `voice`, `speed`) | Đọc chữ thành MP3. Giọng chính: GPT-4o mini TTS qua [TTSFM](https://github.com/dbccccccc/ttsfm) (openai.fm, không chính thức, có thể ngừng bất cứ lúc nào); lỗi hoặc quá `TTSFM_TIMEOUT` (8 s) thì dùng Kokoro. Header `x-tts-engine` cho biết engine; app chỉ cache audio openai.fm (`tts/v2/...`). Tắt bằng `TTSFM_ENABLED=0`. Giọng `af_*`/`am_*` Mỹ, `bf_*`/`bm_*` Anh |
 
 Mọi endpoint trừ `/health` cần `Authorization: Bearer <SPEECH_API_TOKEN>`. Audio không được lưu. Container giới hạn 3 CPU, 2 GB RAM, tối đa 2 tác vụ cùng lúc (VPS dùng chung với app khác).
 

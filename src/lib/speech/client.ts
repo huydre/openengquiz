@@ -3,7 +3,7 @@ import { z } from "zod";
 
 /**
  * Client for the self-hosted speech service (services/speech): pronunciation scoring with
- * Pronunciada and TTS with Kokoro. Server-only: the service token must never reach the browser.
+ * Pronunciada, TTS (openai.fm voices with Kokoro fallback) and speech to text. Server-only: the service token must never reach the browser.
  */
 
 const TIMEOUT_MS = 30_000;
@@ -100,18 +100,22 @@ export async function assessPronunciation(
   return pronunciationResultSchema.parse(await response.json());
 }
 
+/** Which engine produced the audio: GPT-4o mini TTS via openai.fm (primary) or Kokoro (fallback). */
+export type TtsEngine = "openai-fm" | "kokoro";
+
 /** Synthesizes speech as MP3 bytes. */
 export async function synthesizeSpeech(
   text: string,
   voice: TtsVoice = "af_heart",
   speed = 1,
-): Promise<ArrayBuffer> {
+): Promise<{ audio: ArrayBuffer; engine: TtsEngine }> {
   const response = await call("/tts", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ text, voice, speed }),
   });
-  return response.arrayBuffer();
+  const engine: TtsEngine = response.headers.get("x-tts-engine") === "openai-fm" ? "openai-fm" : "kokoro";
+  return { audio: await response.arrayBuffer(), engine };
 }
 
 /** English speech to text on the self-hosted service (faster-whisper). Null when unavailable. */

@@ -20,6 +20,7 @@ from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadF
 from fastapi.responses import Response
 from faster_whisper import WhisperModel
 from kokoro_onnx import Kokoro
+from ttsfm import AudioFormat, TTSClient
 from pydantic import BaseModel, Field
 
 TOKEN = os.environ.get("SPEECH_API_TOKEN", "")
@@ -155,18 +156,66 @@ class TtsRequest(BaseModel):
     speed: float = Field(1.0, ge=0.5, le=1.5)
 
 
+# Primary voices come from GPT-4o mini TTS through TTSFM (openai.fm); Kokoro is the fallback.
+# Each Kokoro voice id the app sends maps to an openai.fm voice plus a speaking style.
+TEACHER_STYLE = "Warm, friendly and clear, like a patient English teacher speaking to a learner."
+OPENAI_VOICES = {
+    "af_heart": ("coral", TEACHER_STYLE),
+    "am_michael": ("ash", TEACHER_STYLE),
+    "bf_emma": ("sage", "Speak with a clear British English accent. " + TEACHER_STYLE),
+    "bm_george": ("fable", "Speak with a clear British English accent. " + TEACHER_STYLE),
+}
+TTSFM_ENABLED = os.environ.get("TTSFM_ENABLED", "1") == "1"
+TTSFM_TIMEOUT = float(os.environ.get("TTSFM_TIMEOUT", "8"))
+
+
+@lru_cache(maxsize=1)
+def ttsfm_client() -> TTSClient:
+    return TTSClient(timeout=TTSFM_TIMEOUT, max_retries=0)
+
+
+def change_speed(mp3: bytes, speed: float) -> bytes:
+    """Time-stretches MP3 audio with ffmpeg (pitch kept)."""
+    result = subprocess.run(
+        ["ffmpeg", "-v", "error", "-i", "pipe:0", "-filter:a", f"atempo={speed}", "-b:a", "64k", "-f", "mp3", "pipe:1"],
+        input=mp3, capture_output=True, timeout=20, check=False,
+    )
+    if result.returncode != 0 or not result.stdout:
+        raise RuntimeError("speed change failed")
+    return result.stdout
+
+
+def openai_fm_speech(text: str, voice: str, speed: float) -> bytes:
+    name, style = OPENAI_VOICES[voice]
+    response = ttsfm_client().generate_speech(
+        text=text, voice=name, response_format=AudioFormat.MP3, instructions=style,
+    )
+    audio = response.audio_data
+    return audio if speed == 1 else change_speed(audio, speed)
+
+
+def kokoro_speech(text: str, voice: str, speed: float) -> bytes:
+    lang = "en-gb" if voice.startswith("b") else "en-us"
+    samples, rate = kokoro().create(text, voice=voice, speed=speed, lang=lang)
+    out = io.BytesIO()
+    sf.write(out, samples, rate, format="MP3")
+    return out.getvalue()
+
+
 @app.post("/tts", dependencies=[Depends(require_token)])
 async def tts(body: TtsRequest) -> Response:
     if body.voice not in kokoro().get_voices():
         raise HTTPException(status_code=400, detail="unknown voice")
-    lang = "en-gb" if body.voice.startswith("b") else "en-us"
+    # The engine header lets the app cache only primary-engine audio.
+    if TTSFM_ENABLED and body.voice in OPENAI_VOICES:
+        try:
+            audio = await asyncio.to_thread(openai_fm_speech, body.text, body.voice, body.speed)
+            return Response(content=audio, media_type="audio/mpeg", headers={"x-tts-engine": "openai-fm"})
+        except Exception as error:  # network, rate limit or format change: fall back to Kokoro
+            print(f"ttsfm failed, using kokoro: {type(error).__name__}", flush=True)
     async with jobs:
-        samples, rate = await asyncio.to_thread(
-            kokoro().create, body.text, voice=body.voice, speed=body.speed, lang=lang,
-        )
-    out = io.BytesIO()
-    sf.write(out, samples, rate, format="MP3")
-    return Response(content=out.getvalue(), media_type="audio/mpeg")
+        audio = await asyncio.to_thread(kokoro_speech, body.text, body.voice, body.speed)
+    return Response(content=audio, media_type="audio/mpeg", headers={"x-tts-engine": "kokoro"})
 
 
 def transcribe_wav(wav: bytes) -> str:
