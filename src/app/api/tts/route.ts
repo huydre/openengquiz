@@ -4,11 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { assertQuota, QuotaExceededError, recordUsage } from "@/lib/ai/quota";
 import { isSpeechServiceConfigured, synthesizeSpeech, TTS_VOICES } from "@/lib/speech/client";
+import { ttsHashPreimage } from "@/lib/speech/tts-cache-key";
 
 const BUCKET = "tts";
 const requestSchema = z.object({
   text: z.string().trim().min(1).max(300),
   voice: z.enum(TTS_VOICES).default("af_heart"),
+  speed: z.number().min(0.5).max(1.5).default(1),
 });
 
 /**
@@ -20,7 +22,7 @@ export async function POST(request: Request) {
   if (!parsed.success) return Response.json({ error: "Dữ liệu không hợp lệ." }, { status: 400 });
   // Normalise whitespace so "the  cat" and "the cat" share one file.
   const text = parsed.data.text.replace(/\s+/g, " ");
-  const { voice } = parsed.data;
+  const { voice, speed } = parsed.data;
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -31,7 +33,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "Giọng đọc chưa sẵn sàng." }, { status: 503 });
   }
 
-  const path = `${voice}/${createHash("sha256").update(`${voice}\n${text}`).digest("hex")}.mp3`;
+  const path = `${voice}/${createHash("sha256").update(ttsHashPreimage(voice, text, speed)).digest("hex")}.mp3`;
   const storage = admin.storage.from(BUCKET);
   const { data: publicUrl } = storage.getPublicUrl(path);
 
@@ -40,7 +42,7 @@ export async function POST(request: Request) {
 
   try {
     await assertQuota(supabase, user.id, "tts");
-    const audio = await synthesizeSpeech(text, voice);
+    const audio = await synthesizeSpeech(text, voice, speed);
     const { error } = await storage.upload(path, audio, { contentType: "audio/mpeg", upsert: true });
     if (error) throw error;
     await recordUsage(supabase, user.id, "tts");

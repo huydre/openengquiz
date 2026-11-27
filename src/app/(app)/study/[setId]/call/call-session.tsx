@@ -11,7 +11,7 @@ import type { CallSummary } from "@/lib/ai/conversation-types";
 
 type ScenarioOption = { id: string; label: string };
 type ChatMessage = { role: "user" | "assistant"; content: string };
-type Resume = { threadId: string; scenario: string; messages: ChatMessage[] };
+type Resume = { threadId: string; scenario: string; messages: ChatMessage[]; finished?: boolean };
 type Props = {
   setId: string;
   setTitle: string;
@@ -21,7 +21,7 @@ type Props = {
   maxTurns: number;
   resume: Resume | null;
   warning?: string | null;
-  onComplete?: () => Promise<void>;
+  onComplete?: (threadId: string) => Promise<void>;
 };
 
 const panel = "space-y-4 rounded-3xl border-2 bg-card p-5 shadow-[0_4px_0_var(--border)]";
@@ -77,7 +77,7 @@ export function CallSession({ setId, setTitle, aiEnabled, scenarios, maxTurns, c
   const [scenario, setScenario] = useState(resume?.scenario ?? scenarios[0]?.id ?? "");
   const [messages, setMessages] = useState<ChatMessage[]>(resume?.messages ?? []);
   const [summary, setSummary] = useState<CallSummary | null>(null);
-  const [finished, setFinished] = useState(false);
+  const [finished, setFinished] = useState(resume?.finished ?? false);
   const [inputMode, setInputMode] = useState<"voice" | "text">(onComplete ? "text" : "voice");
   const [typed, setTyped] = useState("");
   const [recording, setRecording] = useState<RecordedAudio | null>(null);
@@ -109,7 +109,8 @@ export function CallSession({ setId, setTitle, aiEnabled, scenarios, maxTurns, c
     setError("");
     setBusy("start");
     try {
-      const { threadId: id } = await postJson<{ threadId: string }>("/api/conversation", { setId, scenario });
+      const id = threadId || (await postJson<{ threadId: string }>("/api/conversation", { setId, scenario })).threadId;
+      setThreadId(id);
       // Second step: ask the turn endpoint for the opening greeting.
       const greeting = await postJson<{ greeting: string }>(`/api/conversation/${id}/turn`, {
         mode: "text",
@@ -117,7 +118,6 @@ export function CallSession({ setId, setTitle, aiEnabled, scenarios, maxTurns, c
         expectedTurns: 0,
       });
       setMessages([{ role: "assistant", content: greeting.greeting }]);
-      setThreadId(id);
       setSummary(null);
       setFinished(false);
       void playTts(greeting.greeting);
@@ -188,10 +188,14 @@ export function CallSession({ setId, setTitle, aiEnabled, scenarios, maxTurns, c
     setError("");
     setBusy("finish");
     try {
+      if (finished && onComplete) {
+        await onComplete(threadId);
+        return;
+      }
       const data = await postJson<{ summary: CallSummary }>(`/api/conversation/${threadId}/finish`, {});
-      await onComplete?.();
-      setSummary(data.summary);
       setFinished(true);
+      if (onComplete) await onComplete(threadId);
+      else setSummary(data.summary);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Chưa tạo được tổng kết.");
     } finally {
@@ -199,16 +203,18 @@ export function CallSession({ setId, setTitle, aiEnabled, scenarios, maxTurns, c
     }
   }
 
-  const canStart = !threadId && !resume;
+  const canStart = messages.length === 0;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 pb-4">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <Link href={`/sets/${setId}`} className="text-sm font-bold underline">← {setTitle}</Link>
-          <h1 className="text-3xl font-black">Hội thoại AI</h1>
-        </div>
-        <Link href="/history" className={buttonVariants({ variant: "outline" })}>Lịch sử</Link>
+        {onComplete ? <h2 className="text-2xl font-black">Hội thoại theo chủ đề</h2> : <>
+          <div>
+            <Link href={`/sets/${setId}`} className="text-sm font-bold underline">← {setTitle}</Link>
+            <h1 className="text-3xl font-black">Hội thoại AI</h1>
+          </div>
+          <Link href="/history" className={buttonVariants({ variant: "outline" })}>Lịch sử</Link>
+        </>}
       </header>
 
       {warning && <p role="status" className="rounded-2xl border-2 bg-card p-3 text-sm font-bold">{warning}</p>}
@@ -237,7 +243,7 @@ export function CallSession({ setId, setTitle, aiEnabled, scenarios, maxTurns, c
         </section>
       )}
 
-      {threadId && (
+      {threadId && !canStart && (
         <section className={panel}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-xl font-extrabold">{ended ? "Cuộc gọi đã kết thúc" : "Đang gọi"}</h2>

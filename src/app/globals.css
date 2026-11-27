@@ -184,3 +184,28 @@
     animation: none;
   }
 }
+
+/* Tutor mascot (src/components/tutor/tutor-narration.tsx): layered glow rings and a gentle
+   bob. Amplitude is driven by the --tutor-energy custom property (0 idle, 1 speaking) so the
+   component can intensify motion while audio plays without extra keyframes. */
+@keyframes tutor-ring {
+  0% { transform: scale(0.55); opacity: 0.55; }
+  100% { transform: scale(1.25); opacity: 0; }
+}
+@keyframes tutor-bob {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-6px) rotate(2deg); }
+}
+.tutor-ring {
+  animation: tutor-ring 2.8s ease-out infinite;
+  animation-delay: var(--tutor-ring-delay, 0s);
+}
+.tutor-bob {
+  animation: tutor-bob 3.2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tutor-ring,
+  .tutor-bob {
+    animation: none;
+  }
+}

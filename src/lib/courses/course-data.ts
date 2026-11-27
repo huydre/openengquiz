@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { levelProgress } from "./course-progress";
+export { getLessonPlayerState } from "./lesson-player-state";
 
 export async function courseMap(db: SupabaseClient, level: string) {
   const { data, error } = await db.from("course_parts").select("id,title,position,course_lessons(id,title,icon,position,set_id)")
@@ -27,7 +28,7 @@ export async function getCourse(db: SupabaseClient, slug: string, cefr?: string 
 }
 
 export async function getCourseLesson(db: SupabaseClient, id: string) {
-  const { data, error } = await db.from("course_lessons").select("*,course_parts!inner(level_id,course_levels!inner(cefr,courses!inner(slug)))").eq("id", id).maybeSingle();
+  const { data, error } = await db.from("course_lessons").select("*,course_parts!inner(position,level_id,course_levels!inner(cefr,courses!inner(slug)))").eq("id", id).maybeSingle();
   if (error) throw error;
   if (!data) return null;
   const map = await courseMap(db, data.course_parts.level_id);

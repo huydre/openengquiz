@@ -1,10 +1,10 @@
 # Phase 08: Khoá học IELTS
 
-Context: [plan.md](plan.md) · [Brief Khoá học](../reports/from-claude-to-omp-261127-1449-ielts-course-brief.md)
+Context: [plan.md](plan.md) · [Brief Khoá học](../reports/from-claude-to-omp-261127-1449-ielts-course-brief.md) · [Brief player](../reports/from-claude-to-omp-261127-1656-lesson-player-brief.md)
 
-Khoá học thay chức năng Lộ trình cũ bên dưới. IELTS có 7 cấp, 42 phần, 210 bài, mỗi bài gồm nói trước, học từ, nói lại và hội thoại. Tiến độ lưu theo người; hoàn thành bài mới mở bài kế tiếp. Cấp đã chọn và mục tiêu IELTS/CEFR từ onboarding điều khiển Học tiếp.
+Khoá học thay chức năng Lộ trình cũ. IELTS có 7 cấp, 42 phần, 210 bài trong giáo trình. Cấp `foundations` đã seed. Player gồm 7 bước: gia sư mở đầu, nói trước, nhận xét, gia sư chuyển đoạn, thẻ từ, đọc từng từ, nói lại cùng hội thoại và tổng kết. Tiến độ lưu theo người; hoàn thành bài mới mở bài kế tiếp.
 
-Áp `20261127160000_courses.sql`, chạy seed có chủ nội dung trên DB thử và duyệt nội dung trước khi xuất bản thật. Migration giữ bộ từ và thẻ của lộ trình cũ, chỉ gỡ metadata và liên kết.
+Cần áp `20261127170000_lesson_narration.sql` và `20261127170100_lesson_player.sql` trước khi thử luồng đăng nhập với LLM, Kokoro, STT và dịch vụ phát âm thật. Hai migration giữ lịch sử và chuyển tiến độ từ player bốn bước.
 
 ## Lịch sử: Lộ trình học (đã thay thế)
 

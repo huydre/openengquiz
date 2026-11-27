@@ -22,10 +22,12 @@ interface Recognition {
 
 export interface RecordedAudio { audio: Blob; transcript: string }
 
-export function AudioRecorder({ onRecording, transcribe = false, disabled = false }: {
+export function AudioRecorder({ onRecording, transcribe = false, disabled = false, startLabel = "Ghi âm", recordingLabel }: {
   onRecording: (recording: RecordedAudio | null) => void;
   transcribe?: boolean;
   disabled?: boolean;
+  startLabel?: string;
+  recordingLabel?: string;
 }) {
   const [phase, setPhase] = useState<"idle" | "starting" | "recording" | "stopping">("idle");
   const [consent, setConsent] = useState(false);
@@ -198,7 +200,7 @@ export function AudioRecorder({ onRecording, transcribe = false, disabled = fals
       <div className="flex flex-wrap items-center gap-3">
         <Button type="button" disabled={phase === "starting" || phase === "stopping" || (disabled && phase !== "recording")}
           onClick={() => phase === "recording" ? stop.current?.() : requestRecording()}>
-          {phase === "recording" ? "Dừng" : url ? "Ghi lại" : "Ghi âm"}
+          {phase === "recording" ? "Dừng" : url ? "Ghi lại" : startLabel}
         </Button>
         <span className="tabular-nums" aria-label="Thời gian ghi">{Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")} / 1:00</span>
         {url && <Button type="button" variant="outline" disabled={disabled} onClick={() => { setUrl(undefined); setSeconds(0); onRecording(null); }}>Xóa bản ghi</Button>}
@@ -207,6 +209,7 @@ export function AudioRecorder({ onRecording, transcribe = false, disabled = fals
         <LogoLoader size="sm" label={phase === "starting" ? "Đang mở mic" : "Đang xử lý bản ghi"} />
       )}
       {phase === "recording" && <meter aria-label="Mức âm" min={0} max={1} value={level} className="w-full" />}
+      {phase === "recording" && recordingLabel && <p role="status" className="font-bold">{recordingLabel}</p>}
       {url && <audio aria-label="Nghe lại bản ghi" controls src={url} className="w-full" />}
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
     </div>

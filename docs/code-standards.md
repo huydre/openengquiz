@@ -65,9 +65,17 @@ CLI tự đặt file theo loại item: `registry:ui` vào `src/components/ui/`, 
 | Chọn số (cộng/trừ) | `stepper-base` (`src/components/watermelon/stepper.tsx`) | Đã sửa: nút `type="button"` (an toàn trong form), nhãn cho trình đọc màn hình, prop `step`, `label`; style edtech. Trong form gửi giá trị bằng `<input type="hidden">`. Dùng thay `<input type="number">` |
 | Khung đóng/mở | `collapsible` (`src/components/ui/collapsible.tsx`) | Radix Collapsible; dùng thay `<details>` gốc. Mũi tên xoay bằng `group-data-[state=open]:rotate-180` |
 | Hộp thoại Khoá học | `@watermelon/dialog` (`src/components/ui/dialog.tsx`) | Radix Dialog với `asChild` và Motion; dùng cho chọn cấp, mục tiêu, sổ từ. Bắt buộc có `DialogTitle`. |
+| Tra nghĩa và lịch sử bài học | `@watermelon/popover` (`src/components/ui/popover.tsx`) | Mỗi từ trong câu hỏi có nút mở nghĩa qua `/api/lookup`. Popover lịch sử chỉ hiển thị lượt trả lời thuộc bài hiện tại. |
 | Trạng thái đang tải | (tự làm, không có sẵn trong registry) | `LogoLoader` (`src/components/layout/logo-loader.tsx`): ô logo nảy, chỉ CSS (keyframes trong `globals.css`) nên dùng được làm `Suspense` fallback ở Server Component; hiện sau 150 ms, đứng yên khi `prefers-reduced-motion`. Dùng cho mọi fallback, `label` mô tả việc đang tải, `size="sm"` cho chỗ nhỏ |
 | Onboarding, bộ từ, tra từ | Primitive sẵn có | Dùng `Button` và token màu của app; form và thẻ dữ liệu dùng viền dày, góc tròn |
 | Flashcard học từ | Component của app | `flip-card` trong registry hiện là thẻ hồ sơ lật khi rê chuột, không hỗ trợ điều khiển bàn phím cần cho học từ; viewer của app hỗ trợ click, Space, phím mũi tên và `aria-live` |
+
+### Player Khoá học IELTS
+
+- Bảy bước: gia sư mở đầu, nói hoặc nhập lần 1, nhận xét, gia sư chuyển đoạn, lật thẻ, đọc từng từ, nói lại và hội thoại. Bài sau mở khi hoàn thành bài hiện tại.
+- `TutorNarration` (`src/components/tutor/tutor-narration.tsx`) nhận các cặp `{ en, vi }` và `onComplete`. Đọc nối tiếp, có tạm dừng, nghe lại, bỏ qua, tốc độ và phụ đề. Vòng sáng và mặt gia sư tôn trọng `prefers-reduced-motion`. Cache lời dẫn theo bài và loại đoạn; tiếng đọc cache theo giọng, văn bản và tốc độ.
+- `advance_course_lesson` chỉ gọi từ server. Hai lượt trả lời và các lần thử lại lưu bằng `speaking_attempts.lesson_id`; lịch sử không giữ tệp âm thanh. Giọng góp ý lưu theo tài khoản. CEFR và điểm là ước lượng từ câu trả lời, không phải điểm thi IELTS chính thức.
+- Bước đọc từ dùng ngưỡng 70%, cho bỏ qua sau ba lượt chưa đạt, rồi đưa thẻ vào SRS. Hội thoại nhận 4 hoặc 5 lượt trả lời; server chốt cuộc gọi trước khi hoàn thành bài.
 
 ### Lint với code vendor
 

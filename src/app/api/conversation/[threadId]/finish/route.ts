@@ -1,8 +1,10 @@
 import { z } from "zod";
 import { isAiConfigured } from "@/lib/ai/client";
 import { callScenarioSchema, generateCallSummary, MAX_CALL_TURNS, type CallMessage, type CallTargetTerm } from "@/lib/ai/conversation";
+import { COURSE_CALL_TURNS } from "@/lib/ai/conversation-types";
 import { assertQuota, QuotaExceededError, recordUsage } from "@/lib/ai/quota";
 import { cefrSchema } from "@/lib/ai/speaking-feedback";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -19,16 +21,19 @@ export async function POST(request: Request, context: { params: Promise<{ thread
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return Response.json({ error: "Bạn cần đăng nhập để luyện hội thoại." }, { status: 401 });
-    if (!isAiConfigured()) return Response.json({ error: "AI chưa được bật. Hãy thử lại sau." }, { status: 503 });
 
     const { data: thread, error: threadError } = await supabase.from("chat_threads")
-      .select("id, set_id, scenario, summary").eq("id", threadId).abortSignal(signal).maybeSingle();
+      .select("id, set_id, scenario, summary, course_finished_at").eq("id", threadId).abortSignal(signal).maybeSingle();
     if (threadError) throw threadError;
     if (!thread) return Response.json({ error: "Không tìm thấy cuộc gọi." }, { status: 404 });
-    if (thread.summary) return Response.json({ summary: thread.summary });
 
     const scenario = callScenarioSchema.safeParse(thread.scenario);
     if (!scenario.success) return Response.json({ error: "Kịch bản không hợp lệ." }, { status: 400 });
+    const course = scenario.data === "course";
+    if (thread.summary && (!course || thread.course_finished_at)) return Response.json({ summary: thread.summary });
+    if (!isAiConfigured()) return Response.json({ error: "AI chưa được bật. Hãy thử lại sau." }, { status: 503 });
+    const admin = course ? createAdminClient() : null;
+    if (course && !admin) return Response.json({ error: "Chưa thể lưu tổng kết cuộc gọi." }, { status: 503 });
 
     const [cards, profile, messages] = await Promise.all([
       supabase.from("cards").select("term, definition_vi").eq("set_id", thread.set_id)
@@ -43,8 +48,8 @@ export async function POST(request: Request, context: { params: Promise<{ thread
     const history = (messages.data ?? []) as { role: string; content: string }[];
     const expectedTurns = history.filter((m) => m.role === "user").length;
     if (expectedTurns === 0) return Response.json({ error: "Cuộc gọi chưa có lượt nào." }, { status: 409 });
-    if (scenario.data === "course" && expectedTurns < 4) return Response.json({ error: "Cần ít nhất 4 lượt hội thoại." }, { status: 409 });
-    if (expectedTurns > MAX_CALL_TURNS) return Response.json({ error: "Cuộc gọi vượt quá số lượt." }, { status: 409 });
+    if (course && expectedTurns < 4) return Response.json({ error: "Cần ít nhất 4 lượt hội thoại." }, { status: 409 });
+    if (expectedTurns > (course ? COURSE_CALL_TURNS : MAX_CALL_TURNS)) return Response.json({ error: "Cuộc gọi vượt quá số lượt." }, { status: 409 });
 
     const level = cefrSchema.safeParse(profile.data?.level).data ?? "B1";
     const terms: CallTargetTerm[] = (cards.data ?? []).map((c) => ({ term: c.term, definition_vi: c.definition_vi }));
@@ -55,11 +60,10 @@ export async function POST(request: Request, context: { params: Promise<{ thread
     const summary = await generateCallSummary({ scenario: scenario.data, level, terms, messages: transcript, signal });
     signal.throwIfAborted();
 
-    const { data: saved, error: rpcError } = await supabase.rpc("finish_ai_call", {
-      p_thread_id: thread.id,
-      p_expected_turns: expectedTurns,
-      p_summary: summary,
-    }).abortSignal(signal);
+    const { data: saved, error: rpcError } = await (admin
+      ? admin.rpc("mark_course_call_finished", { p_user: user.id, p_thread_id: thread.id, p_expected_turns: expectedTurns, p_summary: summary })
+      : supabase.rpc("finish_ai_call", { p_thread_id: thread.id, p_expected_turns: expectedTurns, p_summary: summary }))
+      .abortSignal(signal);
     if (rpcError) throw rpcError;
     if (saved !== true) {
       return Response.json({ error: "Cuộc gọi đã thay đổi. Hãy tải lại trang." }, { status: 409 });
@@ -69,7 +73,7 @@ export async function POST(request: Request, context: { params: Promise<{ thread
   } catch (error) {
     if (signal.aborted) return Response.json({ error: "Tổng kết quá lâu. Hãy thử lại." }, { status: 504 });
     if (error instanceof QuotaExceededError) return Response.json({ error: error.message }, { status: 429 });
-    console.error("AI call finish failed", error instanceof Error ? error.message : error);
+    console.error("AI call finish failed", error instanceof Error ? error.name : "DatabaseError");
     return Response.json({ error: "Chưa tạo được tổng kết. Hãy thử lại." }, { status: 502 });
   }
 }

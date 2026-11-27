@@ -14,6 +14,8 @@ export const AI_DAILY_LIMITS = {
   pronunciation: 300,
   // Kokoro TTS on our VPS; only cache misses count, cached audio is free.
   tts: 500,
+  // Tutor narration lines per lesson; cached in lesson_narration so only misses count.
+  narration: 60,
 } as const;
 
 export type AiFeature = keyof typeof AI_DAILY_LIMITS;
