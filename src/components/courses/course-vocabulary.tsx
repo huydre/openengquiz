@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, AudioLines, RotateCcw, Volume2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, AudioLines, Volume2 } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { enrollLearnedCards } from "@/app/(app)/sets/review-actions";
 import { AudioRecorder, type RecordedAudio } from "@/components/audio/audio-recorder";
@@ -8,6 +8,7 @@ import { LogoLoader } from "@/components/layout/logo-loader";
 import { Button } from "@/components/ui/button";
 import { PASS_SCORE } from "@/components/vocab/pronounce-step";
 import type { LessonCard } from "@/components/vocab/vocab-lesson";
+import { FlipFlashcard } from "@/components/vocab/flip-flashcard";
 import type { PronunciationResult } from "@/lib/speech/client";
 import { playTts } from "@/lib/speech/play-tts";
 import { pronunciationHint } from "@/lib/speech/pronunciation-hints";
@@ -16,66 +17,88 @@ import { cn } from "@/lib/utils";
 const panel = "space-y-5 rounded-3xl border-2 bg-card p-5 sm:p-7";
 const percent = (score: number) => Math.round(score * 100);
 
-export function CourseReviewCards({ cards, onComplete }: { cards: LessonCard[]; onComplete: () => Promise<void> }) {
+/**
+ * Step 5: for each word, look at the flip card (it speaks the word), then say the word and get
+ * scored, then move on. Counter shows "n / 2N" like a card + speaking pair per word. Finishing
+ * enrolls the words for review and reports words that did not reach the pass score.
+ */
+export function CourseReviewCards({ cards, speech, onComplete }: {
+  cards: LessonCard[]; speech: boolean; onComplete: (weakTerms: string[]) => Promise<void>;
+}) {
   const [index, setIndex] = useState(0);
+  const [phase, setPhase] = useState<"card" | "speak">("card");
   const [flipped, setFlipped] = useState(false);
+  const [weakTerms, setWeakTerms] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const card = cards[index];
+  const position = index * 2 + (phase === "speak" ? 1 : 0) + 1;
+  const total = cards.length * 2;
 
-  function go(next: number) {
-    if (saving || next < 0 || next >= cards.length || next === index) return;
+  function showCard(next: number) {
+    if (saving || next < 0 || next >= cards.length) return;
     setIndex(next);
+    setPhase("card");
     setFlipped(false);
   }
 
   function handleKey(event: KeyboardEvent<HTMLElement>) {
-    if (event.altKey || event.ctrlKey || event.metaKey) return;
-    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-      event.preventDefault();
-      go(index + (event.key === "ArrowRight" ? 1 : -1));
-    }
+    if (phase !== "card" || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (event.key === "ArrowRight") { event.preventDefault(); setPhase("speak"); }
+    if (event.key === "ArrowLeft") { event.preventDefault(); showCard(index - 1); }
   }
 
-  async function finish() {
+  async function wordDone(weak: boolean) {
+    if (saving || !card) return;
+    const weakList = weak ? [...weakTerms, card.term] : weakTerms;
+    setWeakTerms(weakList);
+    if (index + 1 < cards.length) {
+      showCard(index + 1);
+      return;
+    }
     setSaving(true);
-    try { await onComplete(); } catch { setSaving(false); }
+    setError("");
+    try {
+      const result = await enrollLearnedCards(cards.map(({ id }) => id));
+      if (result.error) throw new Error(result.error);
+      await onComplete(weakList);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Chưa lưu được thẻ ôn tập.");
+      setSaving(false);
+    }
   }
 
   return <section className={panel} onKeyDown={handleKey} aria-labelledby="review-cards-title">
     <div className="flex items-center justify-between gap-3">
-      <h2 id="review-cards-title" className="text-xl font-black">Review Cards</h2>
-      {card && <p className="rounded-full bg-secondary/10 px-3 py-1 font-black tabular-nums" aria-live="polite">{index + 1} / {cards.length}</p>}
+      <h2 id="review-cards-title" className="text-xl font-black">{phase === "card" ? "Review Cards" : "Hãy nói từ sau"}</h2>
+      {card && <p className="rounded-full bg-secondary/10 px-3 py-1 font-black tabular-nums" aria-live="polite">{position} / {total}</p>}
     </div>
-    {card ? <>
-      <div className="relative rounded-3xl border-2 border-secondary/30 bg-secondary/5">
-        <button type="button" aria-label={flipped ? "Lật về mặt từ" : "Lật xem nghĩa"} aria-pressed={flipped} onClick={() => setFlipped(!flipped)}
-          className="grid min-h-64 w-full cursor-pointer content-center gap-3 rounded-3xl p-6 pb-16 text-center focus-visible:outline-2 focus-visible:outline-secondary sm:p-8 sm:pb-16">
-          {flipped ? <>
-            <span className="text-xl font-black">{card.definition_vi ?? card.definition_en ?? "Chưa có nghĩa"}</span>
-            {card.example_en && <span className="space-y-1 rounded-xl bg-background p-3"><span lang="en" className="block font-bold">{card.example_en}</span>{card.example_vi && <span className="block text-sm text-muted-foreground">{card.example_vi}</span>}</span>}
-            {!!card.synonyms?.length && <span className="text-sm text-muted-foreground">Đồng nghĩa: <strong lang="en" className="text-foreground">{card.synonyms.join(", ")}</strong></span>}
-          </> : <>
-            {card.part_of_speech && <span className="mx-auto rounded-full border bg-card px-3 py-1 text-sm font-bold">{card.part_of_speech}</span>}
-            <span lang="en" className="text-4xl font-black sm:text-5xl">{card.term}</span>
-            {card.ipa && <span className="text-lg text-muted-foreground">{card.ipa}</span>}
-          </>}
-          <span className="mx-auto inline-flex items-center gap-1 text-sm font-bold text-muted-foreground"><RotateCcw size={15} aria-hidden="true" /> {flipped ? "Xem lại mặt từ" : "Lật xem nghĩa"}</span>
-        </button>
-        <div className="absolute inset-x-0 bottom-4 flex justify-center">
-          <Button type="button" size="sm" variant="outline" onClick={() => void playTts(flipped ? card.example_en ?? card.term : card.term)}><Volume2 aria-hidden="true" /> {flipped && card.example_en ? "Nghe ví dụ" : "Nghe từ"}</Button>
-        </div>
-      </div>
-      <p className="sr-only" aria-live="polite">{flipped ? card.definition_vi ?? card.definition_en : card.term}</p>
+    {card && <div className="h-2 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+      <div className="h-full rounded-full bg-secondary transition-[width]" style={{ width: `${(position / total) * 100}%` }} />
+    </div>}
+
+    {!card ? <>
+      <p>Chưa có thẻ từ trong bài này.</p>
+      <Button type="button" disabled={saving} onClick={() => void onComplete([])}>Tiếp tục</Button>
+    </> : phase === "card" ? <>
+      <FlipFlashcard key={card.id} card={card} flipped={flipped} onFlip={() => setFlipped((value) => !value)} />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Button type="button" size="sm" variant="outline" disabled={!index || saving} onClick={() => go(index - 1)}><ArrowLeft aria-hidden="true" /> Trước</Button>
-        <div className="flex flex-wrap justify-center gap-1" aria-label="Chọn thẻ">{cards.map(({ id }, i) => <button key={id} type="button" aria-label={`Thẻ ${i + 1}`} aria-current={i === index ? "true" : undefined} onClick={() => go(i)} className="grid size-6 place-items-center rounded-full focus-visible:outline-2 focus-visible:outline-primary">
-          <span className={cn("size-2.5 rounded-full", i === index ? "bg-primary" : "bg-muted-foreground/30")} />
-        </button>)}</div>
-        <Button type="button" size="sm" disabled={saving} onClick={() => index + 1 === cards.length ? void finish() : go(index + 1)}>{index + 1 === cards.length ? "Tiếp tục" : "Tiếp"} <ArrowRight aria-hidden="true" /></Button>
+        <Button type="button" size="sm" variant="outline" disabled={!index || saving} onClick={() => showCard(index - 1)}>
+          <ArrowLeft aria-hidden="true" /> Trước
+        </Button>
+        <div className="flex flex-wrap justify-center gap-1" aria-hidden="true">
+          {cards.map(({ id }, i) => <span key={id} className={cn("size-2.5 rounded-full", i < index ? "bg-primary/50" : i === index ? "bg-primary" : "bg-muted-foreground/30")} />)}
+        </div>
+        <Button type="button" size="sm" disabled={saving} onClick={() => setPhase("speak")}>
+          Luyện phát âm <ArrowRight aria-hidden="true" />
+        </Button>
       </div>
-      <p className="text-center text-sm text-muted-foreground">← → chuyển thẻ · Space hoặc Enter để lật khi chọn thẻ</p>
-    </> : <><p>Chưa có thẻ từ trong bài này.</p><Button type="button" disabled={saving} onClick={() => void finish()}>Tiếp tục</Button></>}
-    {saving && <LogoLoader size="sm" label="Đang lưu bước học" />}
+      <p className="text-center text-sm text-muted-foreground">Space/Enter lật thẻ · → luyện phát âm · ← thẻ trước</p>
+    </> : (
+      <ReadWord key={card.id} card={card} speech={speech} onNext={(weak) => void wordDone(weak)} saving={saving} last={index + 1 === cards.length} />
+    )}
+    {saving && <LogoLoader size="sm" label="Đang lưu thẻ ôn tập" />}
+    {error && <p role="alert" className="text-destructive">{error}</p>}
   </section>;
 }
 

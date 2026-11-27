@@ -181,7 +181,11 @@ export function CourseLesson(props: CoursePlayerProps) {
       {step === 2 && question(false)}
       {step === 3 && first && feedback(first, false)}
       {step === 4 && <LessonNarration key="transition" id={lesson.id} kind="transition" lines={narration} onComplete={() => save("advance")} />}
-      {step === 5 && <CourseReviewCards cards={cards} onComplete={() => save("advance")} />}
+      {/* Step 5 pairs each card with saying the word, so it also completes step 6. */}
+      {step === 5 && <CourseReviewCards cards={cards} speech={speech} onComplete={async (weakTerms) => {
+        await request("advance");
+        await save("advance", { weakTerms });
+      }} />}
       {step === 6 && <CoursePronunciation cards={cards} speech={speech} onComplete={(weakTerms?: string[]) => save("advance", { weakTerms: weakTerms ?? [] })} />}
       {step === 7 && (calling ? <CallSession setId={lesson.set_id} setTitle={lesson.title} aiEnabled={ai} scenarios={[{ id: "course", label: lesson.warmup_question }]}
         maxTurns={COURSE_CALL_TURNS} cardCount={cards.length} resume={resume} onComplete={(threadId) => save("advance", { threadId })} />
