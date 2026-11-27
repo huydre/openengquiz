@@ -86,7 +86,7 @@ export async function generateCards(options: GenerateOptions): Promise<Generated
   return cards;
 }
 
-async function requestCards(input: object, instruction: string, model = getModel(), beforeRequest?: () => Promise<void>, signal?: AbortSignal): Promise<GeneratedCard[]> {
+async function requestCards(input: object, instruction: string, model = getModel("generate-cards"), beforeRequest?: () => Promise<void>, signal?: AbortSignal): Promise<GeneratedCard[]> {
   const prompt = JSON.stringify(input);
   const system = `${instruction} ${cardInstructions}`;
   for (let attempt = 0; ; attempt++) {

@@ -14,7 +14,7 @@ export async function enrichVietnamese(result: LookupResult): Promise<LookupResu
   if (!isAiConfigured()) return result;
 
   const { output } = await generateText({
-    model: getModel(),
+    model: getModel("lookup-enrich"),
     output: Output.object({ schema: vietnameseSchema }),
     system:
       "You are a concise English-Vietnamese dictionary for Vietnamese learners. " +

@@ -54,7 +54,18 @@ Thêm domain ở Project Settings → Domains, rồi cập nhật `NEXT_PUBLIC_S
 - Tra từ, thêm thẻ, chọn GIF cho thẻ.
 - Kiểm tra header bảo mật: `curl -I https://<domain>/` có `X-Frame-Options`, `Permissions-Policy`, `Strict-Transport-Security`.
 
-## 6. Sau ra mắt (chưa làm)
+## 6. Theo dõi chi phí AI
+
+Mỗi lượt gọi LLM được ghi số token (theo tính năng và model) vào bảng `ai_token_usage`, không lưu nội dung hay người dùng. Xem tổng hợp:
+
+```bash
+pnpm ai:usage            # 7 ngày gần nhất
+pnpm ai:usage --days 30
+```
+
+Nhân số token với bảng giá của từng nhà cung cấp để ước tính chi phí; cột `cached input` là phần được tính giá cache.
+
+## 7. Sau ra mắt (chưa làm)
 
 - Theo dõi lỗi (Sentry hoặc tương đương) và analytics sự kiện chính.
 - Nút "Báo sai" cho nội dung AI.

@@ -110,7 +110,7 @@ export async function generateReadingPassage(
   level: CefrLevel,
   signal: AbortSignal,
 ): Promise<{ passage: ReadingPassage; matched: ReadingTerm[]; missing: ReadingTerm[] }> {
-  const model = getModel();
+  const model = getModel("reading");
   const prompt = JSON.stringify({ level, target_terms: terms.map((t) => t.term) });
   if (terms.length < MIN_TARGET_TERMS || terms.length > MAX_TARGET_TERMS) throw new Error("Invalid target count");
   let retryHint = "Return valid JSON matching the schema exactly.";

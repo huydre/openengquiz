@@ -126,7 +126,7 @@ export function streamCallReply(input: {
   // The low-latency model answers first; if it fails or stays silent before the first word,
   // the main model takes over so the learner still gets a reply.
   async function* deltas(): AsyncGenerator<string> {
-    const fast = getFastModel("answer");
+    const fast = getFastModel("call-reply", "answer");
     if (fast) {
       let spoke = false;
       try {
@@ -140,7 +140,7 @@ export function streamCallReply(input: {
         console.warn("Fast call reply failed, using main model:", error instanceof Error ? error.message.slice(0, 120) : "unknown error");
       }
     }
-    yield* run(getModel(), false).textStream;
+    yield* run(getModel("call-reply"), false).textStream;
   }
 
   // Same shape the route uses from streamText: async-iterable deltas plus cancel().
@@ -163,7 +163,7 @@ export async function generateCallTerms(input: {
   messages: CallMessage[];
   signal: AbortSignal;
 }): Promise<string[]> {
-  const result = await withFastModel((model) => generateText({
+  const result = await withFastModel("call-terms", (model) => generateText({
     model,
     providerOptions: FAST_PROVIDER_OPTIONS,
     output: Output.object({ schema: callTermsSchema }),
@@ -203,7 +203,7 @@ export async function generateCallGreeting(input: {
   ].join("\n");
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const result = await withFastModel((model) => generateText({
+      const result = await withFastModel("call-greeting", (model) => generateText({
         model,
         providerOptions: FAST_PROVIDER_OPTIONS,
         output: Output.object({ schema: callGreetingSchema }),
@@ -223,7 +223,7 @@ export async function generateCallGreeting(input: {
   // Structured output failed twice: still open the call with a plain greeting
   // rather than blocking the learner; the first turn simply has no chips.
   const plain = await generateText({
-    model: getModel(),
+    model: getModel("call-greeting"),
     system: systemPrompt({ ...input, remainingTurns }),
     messages: [{ role: "user", content: "Start the conversation with a short greeting." }],
     abortSignal: input.signal,
@@ -271,7 +271,7 @@ export async function generateCallAssist(input: {
     target_terms: input.terms.map((t) => t.term),
   });
   const result = await generateText({
-    model: getModel(),
+    model: getModel("call-assist"),
     system,
     prompt,
     abortSignal: input.signal,
@@ -304,7 +304,7 @@ export async function generateCallSummary(input: {
   for (let attempt = 0; ; attempt++) {
     try {
       const result = await generateText({
-        model: getModel(),
+        model: getModel("call-summary"),
         output: Output.object({ schema: callSummarySchema }),
         system: attempt === 0 ? system : `${system} Return valid JSON matching the schema exactly.`,
         prompt,
