@@ -26,7 +26,7 @@ export function FlipFlashcard({ card, flipped, onFlip, accent = "en-US", autoPla
     if (autoPlay) void playTts(card.term, { accent });
   }, [card.term, accent, autoPlay]);
 
-  const face = "absolute inset-0 flex flex-col items-center justify-center gap-3 overflow-y-auto rounded-3xl border-2 p-6 text-center [backface-visibility:hidden]";
+  const face = "absolute inset-0 flex flex-col items-center gap-3 overflow-y-auto [&>:first-child]:mt-auto [&>:last-child]:mb-auto rounded-3xl border-2 p-6 text-center [backface-visibility:hidden]";
   const meaning = card.definition_vi ?? card.definition_en ?? "Chưa có nghĩa";
   const turn = { duration: reduceMotion ? 0 : 0.5, ease: [0.2, 0.8, 0.2, 1] as const };
 
@@ -36,7 +36,7 @@ export function FlipFlashcard({ card, flipped, onFlip, accent = "en-US", autoPla
   }
 
   return (
-    <div className="mx-auto h-80 w-full max-w-lg [perspective:1200px]">
+    <div className={`mx-auto w-full max-w-lg [perspective:1200px] ${card.image_url ? "h-[26rem]" : "h-80"}`}>
       <motion.div
         role="button"
         tabIndex={0}
@@ -60,9 +60,10 @@ export function FlipFlashcard({ card, flipped, onFlip, accent = "en-US", autoPla
             <span className="bg-secondary/10 text-secondary rounded-full px-3 py-1 text-xs font-extrabold">{card.part_of_speech}</span>
           ) : null}
           {card.image_url ? (
-            // Learner-chosen illustration (remote or uploaded); a plain img avoids allow-listing every host.
+            // Learner-chosen illustration (remote or uploaded), shown at its own aspect ratio so GIF captions are not cropped.
+            // A plain img avoids allow-listing every host.
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={card.image_url} alt="" className="h-24 w-32 rounded-2xl object-cover shadow-sm" />
+            <img src={card.image_url} alt="" className="h-auto max-h-36 w-auto max-w-[85%] rounded-2xl shadow-sm" />
           ) : null}
           <p lang="en" className={card.image_url ? "text-4xl font-black break-words" : "text-5xl font-black break-words"}>{card.term}</p>
           {card.ipa ? <p className="text-muted-foreground text-lg"><Ipa value={card.ipa} /></p> : null}
