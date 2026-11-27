@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Plays natural pronunciation audio (Kokoro via /api/tts, cached in Storage). Falls back to the
+ * Plays natural pronunciation audio (Kokoro via GET /api/tts, cached in Storage). Falls back to the
  * browser's speechSynthesis when the service is unavailable or the user is signed out.
  * `playTts` fires and forgets; `playTtsTrack` returns a handle so callers (e.g. TutorNarration)
  * can await the outcome, pause, resume and stop.
@@ -19,25 +19,31 @@ export type TtsSpeed = 0.75 | 0.9 | 1;
 export type TtsOutcome = "ended" | "stopped" | "failed";
 
 const VOICE_BY_ACCENT: Record<TtsAccent, string> = { "en-US": "af_heart", "en-GB": "bf_emma" };
-const urlCache = new Map<string, Promise<string | null>>();
+const prefetched = new Set<string>();
 let current: TtsPlayback | null = null;
 
-function audioUrl(text: string, voice: string, speed: number): Promise<string | null> {
-  const key = ttsCacheKey(voice, text, speed);
-  let pending = urlCache.get(key);
-  if (!pending) {
-    pending = fetch("/api/tts", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ text, voice, speed }),
-    })
-      .then(async (response) => (response.ok ? ((await response.json()).url as string) : null))
-      .catch(() => null);
-    // Do not remember failures, so a later click can retry.
-    pending.then((url) => { if (!url) urlCache.delete(key); });
-    urlCache.set(key, pending);
-  }
-  return pending;
+/**
+ * Direct audio URL: the route answers with a redirect to the cached file or the fresh MP3,
+ * so an <audio> element starts streaming without an extra JSON round trip.
+ */
+export function ttsUrl(text: string, accent: TtsAccent = "en-US", speed = 1): string {
+  const params = new URLSearchParams({ text: text.trim(), voice: VOICE_BY_ACCENT[accent], speed: String(speed) });
+  return `/api/tts?${params}`;
+}
+
+/**
+ * Warms the server cache and the browser HTTP cache for a line that will be played soon
+ * (e.g. the tutor's next sentence), so its playback starts instantly.
+ */
+export function prefetchTts(text: string, options: { accent?: TtsAccent; speed?: number } = {}) {
+  const trimmed = text.trim();
+  if (!trimmed) return;
+  const key = ttsCacheKey(VOICE_BY_ACCENT[options.accent ?? "en-US"], trimmed, options.speed ?? 1);
+  if (prefetched.has(key)) return;
+  prefetched.add(key);
+  void fetch(ttsUrl(trimmed, options.accent, options.speed), { credentials: "same-origin" })
+    .then((response) => { if (!response.ok) prefetched.delete(key); return response.arrayBuffer(); })
+    .catch(() => prefetched.delete(key));
 }
 
 export type TtsState = "loading" | "playing" | "paused" | "idle";
@@ -145,7 +151,7 @@ export function playTtsTrack(
     },
   };
 
-  void audioUrl(trimmed, VOICE_BY_ACCENT[accent], speed).then(async (url) => {
+  void Promise.resolve(ttsUrl(trimmed, accent, speed)).then(async (url) => {
     if (stopped || settled) { settle("stopped"); return; }
     if (url) {
       const audio = new Audio(url);

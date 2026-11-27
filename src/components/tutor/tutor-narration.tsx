@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Play, RotateCcw, SkipForward } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { playTtsTrack, type TtsPlayback, type TtsSpeed, type TtsState } from "@/lib/speech/play-tts";
+import { playTtsTrack, prefetchTts, type TtsPlayback, type TtsSpeed, type TtsState } from "@/lib/speech/play-tts";
 import type { NarrationLine } from "@/lib/courses/narration";
 
 const SPEEDS: TtsSpeed[] = [0.75, 0.9, 1];
@@ -52,6 +52,11 @@ export function TutorNarration({
       setError("Chưa lưu được tiến độ. Thử lại nhé.");
     }
   }, [onComplete]);
+
+  // Prefetch the next two lines while the current one plays, so the tutor does not pause to load.
+  useEffect(() => {
+    for (const next of lines.slice(index + 1, index + 3)) prefetchTts(next.en, { speed });
+  }, [index, speed, lines]);
 
   // Serial playback: one line at a time; index/speed/replay changes restart the effect.
   useEffect(() => {

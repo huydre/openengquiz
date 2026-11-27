@@ -13,6 +13,7 @@ import tempfile
 from functools import lru_cache
 
 import numpy as np
+import onnxruntime
 import pronunciada
 import soundfile as sf
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
@@ -41,7 +42,15 @@ def require_token(authorization: str = Header(default="")) -> None:
 
 @lru_cache(maxsize=1)
 def kokoro() -> Kokoro:
-    return Kokoro(f"{MODELS_DIR}/kokoro-v1.0.int8.onnx", f"{MODELS_DIR}/voices-v1.0.bin")
+    # Thread count dominates Kokoro latency on CPU (2 threads ~5.5 s, 6 threads ~3 s for a
+    # 7 s sentence), so it is configurable instead of inheriting OMP_NUM_THREADS.
+    options = onnxruntime.SessionOptions()
+    options.intra_op_num_threads = int(os.environ.get("KOKORO_THREADS", "4"))
+    options.inter_op_num_threads = 1
+    session = onnxruntime.InferenceSession(
+        f"{MODELS_DIR}/kokoro-v1.0.int8.onnx", options, providers=["CPUExecutionProvider"],
+    )
+    return Kokoro.from_session(session, f"{MODELS_DIR}/voices-v1.0.bin")
 
 
 @app.on_event("startup")

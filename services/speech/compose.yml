@@ -9,11 +9,12 @@ services:
     environment:
       MAX_CONCURRENT_JOBS: "2"
       OMP_NUM_THREADS: "2"
+      KOKORO_THREADS: "5"
     ports:
       - "127.0.0.1:8200:8000"
       - "${BIND_IP:-127.0.0.1}:8200:8000"
     deploy:
       resources:
         limits:
-          cpus: "3"
+          cpus: "6"
           memory: 2g
