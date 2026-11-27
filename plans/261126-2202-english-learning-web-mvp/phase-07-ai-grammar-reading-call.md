@@ -2,7 +2,7 @@
 
 Context: [plan.md](plan.md) · Research mục 3.5
 
-Status: DONE_WITH_CONCERNS. Đã triển khai; migration chưa đẩy, chưa thử tích hợp khi đăng nhập.
+Status: DONE_WITH_CONCERNS (27/11/2026). Migration đã đẩy, đã thử DeepSeek thật ở tầng hàm. Còn: thử toàn luồng khi đăng nhập (mic/STT/TTS, lưu lịch sử).
 
 ## Requirements
 

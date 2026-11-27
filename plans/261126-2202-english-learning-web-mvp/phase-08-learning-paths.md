@@ -2,7 +2,7 @@
 
 Context: [plan.md](plan.md) · Research mục 3.6
 
-Status: DONE_WITH_CONCERNS. Đã triển khai và kiểm cục bộ. Migration chưa đẩy, chưa seed, chưa thử toàn luồng với phiên đăng nhập.
+Status: DONE_WITH_CONCERNS (27/11/2026). Migration đã đẩy; catalog 18 lộ trình / 240 bộ tham khảo cấu trúc OpenQuiz (docs/openquiz-paths-reference.md). Còn: chạy `pnpm seed:paths` (chờ user duyệt), thử toàn luồng khi đăng nhập.
 
 ## Requirements
 

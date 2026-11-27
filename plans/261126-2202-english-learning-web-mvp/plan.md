@@ -1,6 +1,6 @@
 # Plan: Web học tiếng Anh: MVP đầy đủ tính năng
 
-- Status: in progress (27/11/2026). Phase 01 đã có onboarding và CI; cần xác minh Google OAuth trên Supabase và các kiểm thử tích hợp. Phase 02 đã có bộ từ, thẻ, tra từ cơ bản và flashcard; AI tiếng Việt và cache tra từ đã có code (chờ key để chạy thật); media, thư mục và tiến độ vẫn đang chờ. Phase 04 (FSRS, /review, streak, /stats) và phase 03 (Learn, Quiz, Dictation, Writing, Game, Worksheet PDF) đã có code, migration `20261127095700` đã đẩy; chưa chạy thử khi đăng nhập, cần `SUPABASE_SECRET_KEY`. **Phase 05 (AI tạo thẻ): DONE_WITH_CONCERNS**, chờ chạy với DeepSeek thật. **Phase 06 (luyện nói và phát âm): DONE_WITH_CONCERNS**, code và kiểm thử cục bộ đã qua; chờ đẩy migration lịch sử `20261127120100_speaking_attempts.sql` và thử toàn luồng với phiên đăng nhập.
+- Status: in progress (27/11/2026). Phase 01 đến 08 đã có code, mọi migration đã đẩy, CI xanh trên branch `feat/mvp-core` (https://github.com/huydre/openengquiz). **Phase 09 (lớp học) hoãn theo quyết định của user.** Còn: phase 10 (extension), 11 (hoàn thiện, deploy), seed nội dung lộ trình, đăng nhập Google, thử toàn luồng khi đăng nhập.
   **Phase 07 (Grammar, Reading, AI Call): DONE_WITH_CONCERNS**; DeepSeek thật đã qua smoke, chờ đẩy migration lịch sử và thử toàn luồng đăng nhập. **Phase 08 (Lộ trình học): DONE_WITH_CONCERNS**; kiểm cục bộ đã qua, chờ migration, seed, duyệt nội dung và thử toàn luồng đăng nhập.
 - Ngày: 26/11/2026
 - Research gốc: [docs/openquiz-research.md](../../docs/openquiz-research.md)
@@ -44,7 +44,7 @@ Xem dòng Status ở đầu trang và checklist trong từng phase.
 | 6 | AI Speaking + chấm phát âm | 2, 5 | 1.5 tuần | [phase-06](phase-06-ai-speaking-pronunciation.md) |
 | 7 | AI Grammar, Reading, AI Call | 6 | 1.5 tuần | [phase-07](phase-07-ai-grammar-reading-call.md) |
 | 8 | Lộ trình học (có sẵn + AI cá nhân hóa) | 2, 5 | 1 tuần | [phase-08](phase-08-learning-paths.md) |
-| 9 | Lớp học | 3, 4, 8 | 1.5 tuần | [phase-09](phase-09-classroom.md) |
+| 9 | Lớp học (**hoãn**) | 3, 4, 8 | 1.5 tuần | [phase-09](phase-09-classroom.md) |
 | 10 | Chrome Extension | 2 | 1.5 tuần | [phase-10](phase-10-chrome-extension.md) |
 | 11 | Landing/SEO, hardening, deploy | tất cả | 1 tuần | [phase-11](phase-11-launch-hardening.md) |
 

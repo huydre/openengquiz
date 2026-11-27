@@ -44,7 +44,7 @@ Context: [plan.md](plan.md) · Research mục 3.2
 
 ## Status
 
-**Status**: DONE_WITH_CONCERNS (đã triển khai; chưa kiểm thử với DeepSeek thật).
+Status: DONE_WITH_CONCERNS (27/11/2026). Đã thử DeepSeek thật qua AI SDK (structured output chạy). Còn: thử toàn luồng khi đăng nhập.
 
 - [x] Sinh từ danh sách từ, đoạn văn bản hoặc chủ đề; CEFR mặc định theo hồ sơ, hoặc B1 nếu chưa đặt.
 - [x] Đọc `word_cache` trước khi hỏi DeepSeek cho các từ chưa có kết quả dùng được.

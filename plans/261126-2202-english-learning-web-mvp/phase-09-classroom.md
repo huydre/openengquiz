@@ -1,5 +1,7 @@
 # Phase 09: Lớp học
 
+Status: **hoãn** (27/11/2026, user quyết định làm sau). Không chặn phase 10, 11.
+
 Context: [plan.md](plan.md) · Research mục 3.8
 
 ## Requirements

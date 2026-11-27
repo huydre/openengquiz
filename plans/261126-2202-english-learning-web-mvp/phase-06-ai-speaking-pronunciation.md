@@ -2,7 +2,7 @@
 
 Context: [plan.md](plan.md) · Research mục 3.4, 8.5
 
-Status: DONE_WITH_CONCERNS. Code đã triển khai; migration lịch sử chưa đẩy. Chưa thử toàn luồng với phiên đăng nhập và dịch vụ AI thật.
+Status: DONE_WITH_CONCERNS (27/11/2026). Migration `speaking_attempts` đã đẩy; dịch vụ giọng nói chạy tại https://speech.techlaai.io.vn. Còn: thử toàn luồng khi đăng nhập, Chrome Android, Safari iOS.
 
 ## Requirements
 
