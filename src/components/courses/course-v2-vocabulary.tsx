@@ -244,12 +244,12 @@ export function CourseV2Vocabulary({
   const kind = descriptor?.kind ?? "review";
 
   /** Persist `next` as the new small_step with the current state snapshot. Returns true on success. */
-  async function checkpoint(next: number, snapshot: VocabState): Promise<boolean> {
+  async function checkpoint(next: number, snapshot: VocabState, skipped = false): Promise<boolean> {
     if (pending.current || busy) return false;
     pending.current = true;
     setLocalError("");
     try {
-      await post("checkpoint", activity, next, { previousStep: step, state: serializeState(snapshot) });
+      await post("checkpoint", activity, next, { previousStep: step, state: serializeState(snapshot), ...(skipped ? { skipped: true } : {}) });
       setStep(next);
       setState(snapshot);
       return true;
@@ -365,6 +365,7 @@ export function CourseV2Vocabulary({
             const next = { ...state, speak };
             advance(next);
           }}
+          onSkip={(speak) => void checkpoint(Math.min(step + 1, 18), { ...state, speak }, true)}
         />
       )}
       {kind === "shadow" && (
@@ -576,7 +577,8 @@ function SayWordStep({ card, speech, post, activity, smallStep, busy, onDone }: 
   }
 
   const passed = result != null && result.score >= PASS_SCORE;
-  const canSkip = failures >= 3 && !passed;
+  // Skip after three misses, or right away when scoring itself is unavailable (quota, outage).
+  const canSkip = (failures >= 3 && !passed) || Boolean(error);
   const hints = result ? [...new Set(result.issues.map(pronunciationHint).filter(Boolean))].slice(0, 3) : [];
   const bars = result ? ([["Chính xác", result.accuracy], ["Trôi chảy", result.fluency], ["Đầy đủ", result.completeness]] as const) : [];
 
@@ -860,7 +862,7 @@ function FillPhase({ step, cards, state, busy, onAdvance }: {
 
 interface WordQuestion { en: string; vi: string; part: 1 }
 
-function WordSpeakingPhase({ lessonId, step, cards, state, speech, ai, tone, post, activity, busy, onAdvance }: {
+function WordSpeakingPhase({ lessonId, step, cards, state, speech, ai, tone, post, activity, busy, onAdvance, onSkip }: {
   lessonId: string;
   step: number;
   cards: LessonCard[];
@@ -872,8 +874,10 @@ function WordSpeakingPhase({ lessonId, step, cards, state, speech, ai, tone, pos
   activity: number;
   busy: boolean;
   onAdvance: (speak: SpeakState) => void;
+  onSkip: (speak: SpeakState) => void;
 }) {
   const slot = vocabStepDescriptor(step)?.cardIndex ?? 0; // steps 11,13,15,17 -> cards 0..3
+  const [limited, setLimited] = useState(false);
   const card = cards[slot];
   const [question, setQuestion] = useState<WordQuestion | null>(null);
   const [questionError, setQuestionError] = useState("");
@@ -882,8 +886,8 @@ function WordSpeakingPhase({ lessonId, step, cards, state, speech, ai, tone, pos
   useEffect(() => {
     if (!card) return;
     let cancelled = false;
-    post<{ question: WordQuestion }>("word_question", activity, step)
-      .then((body) => { if (!cancelled) setQuestion(body.question); })
+    post<{ question: WordQuestion; limited?: boolean }>("word_question", activity, step)
+      .then((body) => { if (!cancelled) { setQuestion(body.question); setLimited(body.limited === true); } })
       .catch((cause) => { if (!cancelled) setQuestionError(cause instanceof Error ? cause.message : "Chưa tạo được câu hỏi."); });
     return () => { cancelled = true; };
   }, [card, post, activity, step, questionNonce]);
@@ -902,7 +906,15 @@ function WordSpeakingPhase({ lessonId, step, cards, state, speech, ai, tone, pos
   }
   if (!question) return <LogoLoader label={`Đang tạo câu hỏi Speaking cho từ "${card.term}"...`} />;
 
+  const skip = () => onSkip({ index: slot + 1, results: { ...state.results, [card.id]: {} } });
   return (
+    <div className="space-y-4">
+    {limited ? (
+      <div className="border-accent/50 bg-accent/10 flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 p-4">
+        <p className="text-sm font-bold">Bạn đã dùng hết lượt luyện nói với AI hôm nay. Có thể trả lời câu hỏi đơn giản bên dưới hoặc bỏ qua bước này.</p>
+        <Button type="button" variant="outline" disabled={busy} onClick={skip}>Bỏ qua</Button>
+      </div>
+    ) : null}
     <CourseV2Speaking
       key={`${card.id}-${step}`}
       lessonId={lessonId}
@@ -924,6 +936,7 @@ function WordSpeakingPhase({ lessonId, step, cards, state, speech, ai, tone, pos
       getIdeas={async () => (await post<{ ideas: LessonIdea[] }>("ideas", activity, step)).ideas}
       onComplete={() => onAdvance({ index: slot + 1, results: { ...state.results, [card.id]: { usedTarget: true } } })}
     />
+    </div>
   );
 }
 

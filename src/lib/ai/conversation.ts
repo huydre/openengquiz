@@ -1,7 +1,7 @@
 import "server-only";
-import { generateText, NoObjectGeneratedError, NoOutputGeneratedError, Output, streamText } from "ai";
+import { generateText, NoObjectGeneratedError, NoOutputGeneratedError, Output, streamText, type LanguageModel } from "ai";
 import { z } from "zod";
-import { getModel } from "./client";
+import { FAST_PROVIDER_OPTIONS, getFastModel, getModel, withFastModel } from "./client";
 import {
   callScenarioSchema,
   callSummarySchema,
@@ -114,13 +114,42 @@ export function streamCallReply(input: {
   remainingTurns: number;
   signal: AbortSignal;
 }) {
-  return streamText({
-    model: getModel(),
+  const run = (model: LanguageModel, fast: boolean) => streamText({
+    model,
+    ...(fast ? { providerOptions: FAST_PROVIDER_OPTIONS } : {}),
     system: systemPrompt(input),
     messages: input.messages.map((m) => ({ role: m.role, content: m.content })),
     abortSignal: input.signal,
     maxRetries: 0,
   });
+
+  // The low-latency model answers first; if it fails or stays silent before the first word,
+  // the main model takes over so the learner still gets a reply.
+  async function* deltas(): AsyncGenerator<string> {
+    const fast = getFastModel("answer");
+    if (fast) {
+      let spoke = false;
+      try {
+        for await (const delta of run(fast, true).textStream) {
+          if (delta) spoke = true;
+          yield delta;
+        }
+        if (spoke) return;
+      } catch (error) {
+        if (spoke || input.signal.aborted) throw error;
+        console.warn("Fast call reply failed, using main model:", error instanceof Error ? error.message.slice(0, 120) : "unknown error");
+      }
+    }
+    yield* run(getModel(), false).textStream;
+  }
+
+  // Same shape the route uses from streamText: async-iterable deltas plus cancel().
+  const iterator = deltas();
+  const textStream = {
+    [Symbol.asyncIterator]: () => iterator,
+    cancel: async () => { await iterator.return(undefined); },
+  };
+  return { textStream };
 }
 
 /**
@@ -134,8 +163,9 @@ export async function generateCallTerms(input: {
   messages: CallMessage[];
   signal: AbortSignal;
 }): Promise<string[]> {
-  const result = await generateText({
-    model: getModel(),
+  const result = await withFastModel((model) => generateText({
+    model,
+    providerOptions: FAST_PROVIDER_OPTIONS,
     output: Output.object({ schema: callTermsSchema }),
     system: [
       "You suggest English vocabulary chips for a Vietnamese learner's next reply in a conversation practice call.",
@@ -150,7 +180,7 @@ export async function generateCallTerms(input: {
     }),
     abortSignal: input.signal,
     maxRetries: 0,
-  });
+  }), input.signal, "answer");
   return result.output.terms;
 }
 
@@ -173,14 +203,15 @@ export async function generateCallGreeting(input: {
   ].join("\n");
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const result = await generateText({
-        model: getModel(),
+      const result = await withFastModel((model) => generateText({
+        model,
+        providerOptions: FAST_PROVIDER_OPTIONS,
         output: Output.object({ schema: callGreetingSchema }),
         system: attempt === 0 ? system : `${system} Return valid JSON matching the schema exactly.`,
         messages: [{ role: "user", content: "Start the conversation now." }],
         abortSignal: input.signal,
         maxRetries: 0,
-      });
+      }), input.signal, "answer");
       const greeting = cleanCallText(result.output.greeting);
       if (!greeting) throw new Error("Empty greeting");
       return { greeting: greeting.slice(0, 2000), terms: result.output.terms };

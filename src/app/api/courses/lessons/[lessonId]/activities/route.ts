@@ -16,8 +16,8 @@ import { createClient } from "@/lib/supabase/server";
 const smallStep = z.number().int().min(1).max(18);
 const fields = { activity: z.number().int().min(1).max(7), smallStep };
 const inputSchema = z.discriminatedUnion("action", [
-  z.object({ ...fields, action: z.literal("checkpoint"), previousStep: smallStep, state: z.record(z.string(), z.unknown()) }),
-  z.object({ ...fields, action: z.literal("complete"), threadId: z.uuid().optional() }),
+  z.object({ ...fields, action: z.literal("checkpoint"), previousStep: smallStep, state: z.record(z.string(), z.unknown()), skipped: z.boolean().optional() }),
+  z.object({ ...fields, action: z.literal("complete"), threadId: z.uuid().optional(), skipped: z.boolean().optional() }),
   z.object({ ...fields, action: z.literal("start_call") }),
   z.object({ ...fields, action: z.literal("answer"), transcript: z.string().trim().min(1).max(2000) }),
   z.object({ ...fields, action: z.literal("feedback"), attemptId: z.uuid(), tone: z.enum(FEEDBACK_TONES).optional() }),
@@ -68,8 +68,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ les
     };
 
     if (input.action === "checkpoint" || input.action === "complete" || input.action === "start_call") {
-      const payload = input.action === "checkpoint" ? { previousStep: input.previousStep, state: input.state }
-        : input.action === "complete" ? { threadId: input.threadId } : {};
+      // A speaking step may be skipped only when AI speaking is unavailable today (quota used up
+      // or AI off); the database then accepts the step without a saved answer.
+      const wantsSkip = input.action !== "start_call" && input.skipped === true;
+      if (wantsSkip) {
+        const limited = !isAiConfigured() || await assertQuota(db, userId, "speaking").then(() => false, (cause) => {
+          if (cause instanceof QuotaExceededError) return true;
+          throw cause;
+        });
+        if (!limited) return Response.json({ error: "Bạn vẫn còn lượt luyện nói hôm nay, hãy trả lời câu hỏi nhé." }, { status: 409 });
+      }
+      const payload = input.action === "checkpoint" ? { previousStep: input.previousStep, state: input.state, skipped: wantsSkip }
+        : input.action === "complete" ? { threadId: input.threadId, skipped: wantsSkip } : {};
       const progress = await mutate(payload);
       return progress ? Response.json({ progress }) : Response.json({ error: "Chưa thể chuyển bước. Tải lại nếu tiến độ đã thay đổi." }, { status: 409 });
     }
@@ -127,7 +137,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ les
             if (cause instanceof QuotaExceededError) return false;
             throw cause;
           });
-        if (!canGenerate) question = fallbackQuestion;
+        if (!canGenerate) {
+          question = fallbackQuestion;
+          if (input.action === "word_question") return Response.json({ question, limited: true });
+        }
       }
       if (!question && input.action === "word_question") {
         const { output } = await generateText({
