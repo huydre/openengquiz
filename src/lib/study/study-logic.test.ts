@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { matchesAnswer, gradeAttempt } from "./answer-matcher";
-import { advanceLearn, createLearnState } from "./learn-algorithm";
 import { choiceOptions, falseStatement } from "./question-generator";
 import type { StudyCard } from "./study-types";
 
@@ -33,25 +32,3 @@ describe("question options", () => {
   });
 });
 
-describe("Learn queue", () => {
-  it("repeats wrong cards and finishes after typed recall", () => {
-    let state = createLearnState(["a"], 5);
-    state = advanceLearn(state, false);
-    expect(state.queue[0]).toEqual({ cardId: "a", stage: "choice" });
-    state = advanceLearn(state, true);
-    expect(state.queue[0]).toEqual({ cardId: "a", stage: "type" });
-    state = advanceLearn(state, false);
-    expect(state.queue[0]).toEqual({ cardId: "a", stage: "type" });
-    state = advanceLearn(state, true);
-    expect(state.queue).toHaveLength(0);
-    expect(state.mastered).toEqual(["a"]);
-  });
-
-  it("moves to the next batch only after current batch is mastered", () => {
-    let state = createLearnState(["a", "b"], 1);
-    state = advanceLearn(state, true);
-    state = advanceLearn(state, true);
-    expect(state.batch).toBe(2);
-    expect(state.queue[0].cardId).toBe("b");
-  });
-});

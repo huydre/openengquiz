@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BarChart3, BookOpen, GraduationCap, History, Home, Languages, LogOut, Map, RotateCcw, Search,
+  BarChart3, BookOpen, GraduationCap, History, Home, Languages, LogOut, Map, MessageSquareWarning, RotateCcw, Search, Trophy, Users,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -21,6 +21,8 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { signOut } from "@/app/auth/actions";
+import { submitFeedback } from "@/lib/feedback/submit-feedback";
+import { FeedbackDialog } from "@/components/feedback/feedback-dialog";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS, type NavItem } from "./nav-items";
 
@@ -29,15 +31,17 @@ const ICONS: Record<string, { icon: LucideIcon; color: string }> = {
   "/home": { icon: Home, color: "text-primary" },
   "/sets": { icon: BookOpen, color: "text-secondary" },
   "/review": { icon: RotateCcw, color: "text-brand-orange" },
-  "/courses": { icon: Map, color: "text-brand-grape" },
+  "/courses": { icon: GraduationCap, color: "text-brand-grape" },
+  "/paths": { icon: Map, color: "text-primary" },
   "/lookup": { icon: Search, color: "text-secondary" },
   "/history": { icon: History, color: "text-brand-orange" },
   "/stats": { icon: BarChart3, color: "text-primary" },
-  "/classes": { icon: GraduationCap, color: "text-brand-grape" },
+  "/leaderboard": { icon: Trophy, color: "text-accent-edge" },
+  "/classes": { icon: Users, color: "text-brand-grape" },
 };
 
 /** Learning destinations go first; everything else is listed under "Công cụ". */
-const LEARN = new Set(["/home", "/sets", "/review", "/courses"]);
+const LEARN = new Set(["/home", "/sets", "/review", "/courses", "/paths"]);
 
 const ITEM_CLASS = cn(
   "h-12 gap-3 rounded-2xl border-2 border-transparent px-3 text-sm font-extrabold tracking-wide uppercase",
@@ -122,7 +126,20 @@ export function AppSidebar({ displayName }: { displayName: string }) {
         <NavGroup label="Công cụ" items={tools} pathname={pathname} />
       </SidebarContent>
 
-      <SidebarFooter className="p-3">
+      <SidebarFooter className="gap-2 p-3">
+        <FeedbackDialog submit={submitFeedback}>
+          {(open) => (
+            <button
+              type="button"
+              onClick={open}
+              title="Báo lỗi hoặc góp ý"
+              className="text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-extrabold transition-colors group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
+            >
+              <MessageSquareWarning className="size-5 shrink-0" aria-hidden="true" />
+              <span className="group-data-[collapsible=icon]:hidden">Báo lỗi, góp ý</span>
+            </button>
+          )}
+        </FeedbackDialog>
         <div className="flex items-center gap-3 rounded-2xl border-2 p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:p-0">
           <Link href="/account" title="Tài khoản" className="flex min-w-0 flex-1 items-center gap-3 rounded-xl outline-none focus-visible:ring-2 group-data-[collapsible=icon]:flex-none">
             <span

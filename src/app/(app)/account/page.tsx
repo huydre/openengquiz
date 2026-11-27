@@ -3,6 +3,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { LogoLoader } from "@/components/layout/logo-loader";
 import { DeleteAccountForm } from "./delete-account-form";
+import { LeaderboardToggle } from "./leaderboard-toggle";
+import { getLeaderboardVisibility } from "@/lib/gamification/weekly-leaderboard";
 
 export const metadata = { title: "Tài khoản" };
 
@@ -13,7 +15,10 @@ export default function AccountPage() {
 async function AccountContent() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase.from("profiles").select("display_name, goal, level").eq("id", user!.id).maybeSingle();
+  const [{ data: profile }, showOnLeaderboard] = await Promise.all([
+    supabase.from("profiles").select("display_name, goal, level").eq("id", user!.id).maybeSingle(),
+    getLeaderboardVisibility(supabase),
+  ]);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -29,6 +34,10 @@ async function AccountContent() {
         <p className="text-muted-foreground text-sm">
           Xem <Link href="/privacy" className="text-primary-edge font-bold underline">Chính sách bảo mật</Link> và <Link href="/terms" className="text-primary-edge font-bold underline">Điều khoản sử dụng</Link>.
         </p>
+      </section>
+
+      <section className="bg-card rounded-3xl border-2 p-6 shadow-[0_4px_0_var(--border)]">
+        <LeaderboardToggle initial={showOnLeaderboard} />
       </section>
 
       <section className="border-destructive/30 bg-destructive/5 space-y-3 rounded-3xl border-2 p-6" aria-labelledby="delete-title">
