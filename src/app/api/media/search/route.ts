@@ -1,16 +1,9 @@
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-
-export type MediaImage = { thumb: string; url: string; title: string };
+import { searchGiphy, type MediaImage } from "@/lib/media/giphy";
 
 const openverseSchema = z.object({
   results: z.array(z.object({ url: z.string(), thumbnail: z.string().nullable().optional(), title: z.string().nullable().optional() })),
-});
-const giphySchema = z.object({
-  data: z.array(z.object({
-    title: z.string().optional(),
-    images: z.object({ fixed_width: z.object({ url: z.string() }), downsized_medium: z.object({ url: z.string() }).optional(), original: z.object({ url: z.string() }) }),
-  })),
 });
 const tenorSchema = z.object({
   results: z.array(z.object({
@@ -50,14 +43,7 @@ export async function GET(request: Request) {
     try {
       let images: MediaImage[];
       if (giphyKey) {
-        const search = new URLSearchParams({ api_key: giphyKey, q: query, limit: "12", rating: "pg", lang: "en" });
-        const response = await fetch(`https://api.giphy.com/v1/gifs/search?${search}`, { signal, next: { revalidate: 86_400 } });
-        if (!response.ok) throw new Error(`Giphy ${response.status}`);
-        images = giphySchema.parse(await response.json()).data.map((gif) => ({
-          thumb: gif.images.fixed_width.url,
-          url: gif.images.downsized_medium?.url ?? gif.images.original.url,
-          title: gif.title || query,
-        }));
+        images = await searchGiphy(query, giphyKey, { init: { signal, next: { revalidate: 86_400 } } });
       } else {
         const search = new URLSearchParams({ key: tenorKey!, q: query, limit: "12", contentfilter: "high", media_filter: "tinygif,gif", client_key: "openengquiz" });
         const response = await fetch(`https://tenor.googleapis.com/v2/search?${search}`, { signal, next: { revalidate: 86_400 } });

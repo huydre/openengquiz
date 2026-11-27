@@ -10,7 +10,8 @@
     "test": "vitest run",
     "typecheck": "next typegen && tsc --noEmit",
     "seed:courses": "bun --conditions=react-server scripts/seed-courses.ts",
-    "seed:lesson-activities": "bun --conditions=react-server scripts/seed-lesson-activities.ts"
+    "seed:lesson-activities": "bun --conditions=react-server scripts/seed-lesson-activities.ts",
+    "seed:card-gifs": "bun --conditions=react-server scripts/seed-card-gifs.ts"
   },
   "dependencies": {
     "@ai-sdk/deepseek": "^3.0.91",
