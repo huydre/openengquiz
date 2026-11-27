@@ -10,6 +10,7 @@ import { StudyQuestion } from "./study-question";
 import { ResultSummary } from "./result-summary";
 import { useStudySession } from "./use-study-session";
 import { STUDY_MODE_META } from "./study-mode-meta";
+import { ModeIntro, OptionPill } from "./mode-shell";
 import type { QuestionType, StudyCard, StudyMode } from "@/lib/study/study-types";
 
 const QUIZ_TYPES: { type: QuestionType; label: string }[] = [
@@ -85,42 +86,43 @@ export function StudyRunner({ setId, title, mode, cards, highScore = 0 }: {
       {!cards.length ? (
         <EmptySet setId={setId} />
       ) : session.status === "setup" || session.status === "starting" ? (
-        <section className="bg-card overflow-hidden rounded-[2rem] border-2 shadow-[0_6px_0_var(--border)]">
-          <div className="from-muted/70 to-card space-y-4 bg-gradient-to-b p-6 sm:p-8">
-            <span className={cn("grid size-16 place-items-center rounded-3xl", meta.tone)}>
-              <meta.icon className="size-8" aria-hidden="true" />
-            </span>
-            <div>
-              <h1 className="text-3xl font-black tracking-tight sm:text-4xl">{meta.label}</h1>
-              <p className="text-muted-foreground mt-2 max-w-xl text-lg">{meta.description}</p>
-            </div>
-            <div className="flex flex-wrap gap-2 text-sm font-extrabold">
+        <ModeIntro
+          icon={meta.icon}
+          tone={meta.tone}
+          title={meta.label}
+          description={meta.description}
+          badges={
+            <>
               <span className="bg-card flex items-center gap-1.5 rounded-full border-2 px-3 py-1"><Layers className="size-4" aria-hidden="true" />{cards.length} thẻ · {title}</span>
               {mode === "game" && highScore > 0 ? (
                 <span className="bg-accent/20 text-accent-foreground flex items-center gap-1.5 rounded-full px-3 py-1"><Trophy className="size-4" aria-hidden="true" />Kỷ lục {highScore}</span>
               ) : null}
-            </div>
-          </div>
-
-          {mode === "quiz" ? (
-            <div className="space-y-5 border-t-2 p-6 sm:p-8">
+            </>
+          }
+          footer={
+            <>
+              <p className="text-muted-foreground text-sm font-bold">Mẹo: dùng phím số để chọn đáp án, Enter để tiếp tục.</p>
+              <Button
+                type="button"
+                size="lg"
+                className="h-14 px-10 text-base"
+                disabled={session.status === "starting" || (mode === "quiz" && !quizTypes.length)}
+                onClick={() => session.start(count, quizTypes)}
+              >
+                {session.status === "starting" ? "Đang bắt đầu..." : <>Bắt đầu <ArrowRight aria-hidden="true" /></>}
+              </Button>
+            </>
+          }
+        >
+          {mode === "quiz" || session.error ? (<>{mode === "quiz" ? (
+            <>
               <div>
                 <p id="quiz-count" className="mb-2 font-extrabold">Số câu</p>
-                <div role="radiogroup" aria-labelledby="quiz-count" className="flex flex-wrap gap-2">
+                <div role="group" aria-labelledby="quiz-count" className="flex flex-wrap gap-2">
                   {[5, 10, 20, cards.length].filter((value, index, values) => value <= cards.length && values.indexOf(value) === index).map((value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      role="radio"
-                      aria-checked={count === value}
-                      onClick={() => setCount(value)}
-                      className={cn(
-                        "h-11 min-w-16 rounded-2xl border-2 px-4 font-black transition-colors",
-                        count === value ? "border-secondary bg-secondary/15 text-secondary" : "hover:bg-muted",
-                      )}
-                    >
+                    <OptionPill key={value} selected={count === value} onClick={() => setCount(value)}>
                       {value === cards.length && value > 20 ? `Tất cả (${value})` : value}
-                    </button>
+                    </OptionPill>
                   ))}
                 </div>
               </div>
@@ -130,40 +132,19 @@ export function StudyRunner({ setId, title, mode, cards, highScore = 0 }: {
                   {QUIZ_TYPES.map((choice) => {
                     const on = quizTypes.includes(choice.type);
                     return (
-                      <button
-                        key={choice.type}
-                        type="button"
-                        aria-pressed={on}
-                        onClick={() => setQuizTypes((current) => on ? current.filter((item) => item !== choice.type) : [...current, choice.type])}
-                        className={cn(
-                          "h-11 rounded-2xl border-2 px-4 font-extrabold transition-colors",
-                          on ? "border-primary bg-primary/12 text-primary-edge" : "text-muted-foreground hover:bg-muted",
-                        )}
-                      >
+                      <OptionPill key={choice.type} tone="primary" selected={on}
+                        onClick={() => setQuizTypes((current) => on ? current.filter((item) => item !== choice.type) : [...current, choice.type])}>
                         {choice.label}
-                      </button>
+                      </OptionPill>
                     );
                   })}
                 </div>
                 {!quizTypes.length ? <p className="text-destructive mt-2 text-sm font-bold">Chọn ít nhất một dạng câu.</p> : null}
               </div>
-            </div>
+            </>
           ) : null}
-
-          <div className="flex flex-col gap-3 border-t-2 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
-            <p className="text-muted-foreground text-sm font-bold">Mẹo: dùng phím số để chọn đáp án, Enter để tiếp tục.</p>
-            <Button
-              type="button"
-              size="lg"
-              className="h-14 px-10 text-base"
-              disabled={session.status === "starting" || (mode === "quiz" && !quizTypes.length)}
-              onClick={() => session.start(count, quizTypes)}
-            >
-              {session.status === "starting" ? "Đang bắt đầu..." : <>Bắt đầu <ArrowRight aria-hidden="true" /></>}
-            </Button>
-          </div>
-          {session.error ? <p role="alert" className="text-destructive px-8 pb-6 font-bold">{session.error}</p> : null}
-        </section>
+          {session.error ? <p role="alert" className="text-destructive font-bold">{session.error}</p> : null}</>) : null}
+        </ModeIntro>
       ) : session.status === "finished" && session.result ? (
         <ResultSummary
           mode={mode}
