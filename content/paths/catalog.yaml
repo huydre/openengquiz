@@ -1,0 +1,87 @@
+- slug: ielts-vocabulary-topics
+  title: Vốn từ theo chủ đề IELTS
+  description: Xây vốn từ để phân tích vấn đề quen thuộc trong bài nói và bài viết.
+  tags: [ielts]
+  level: B2
+  sets:
+    - { title: Việc làm và lựa chọn nghề nghiệp, topic: công việc, words: 15 }
+    - { title: Học tập trong và ngoài lớp, topic: giáo dục, words: 15 }
+    - { title: Sống cùng biến đổi khí hậu, topic: môi trường, words: 15 }
+    - { title: Một ngày trong thế giới số, topic: công nghệ, words: 15 }
+    - { title: Sức khỏe và phòng bệnh, topic: sức khỏe, words: 15 }
+    - { title: Du lịch và tác động địa phương, topic: du lịch, words: 15 }
+    - { title: Gia đình qua các thế hệ, topic: gia đình, words: 15 }
+    - { title: Tiếp nhận thông tin có chọn lọc, topic: truyền thông, words: 15 }
+    - { title: Thiết kế thành phố đáng sống, topic: đô thị, words: 15 }
+    - { title: Từ nguyên liệu đến bàn ăn, topic: ẩm thực, words: 15 }
+- slug: ielts-essential-collocations
+  title: Kết hợp từ tự nhiên cho IELTS
+  description: Học cách ghép từ để trình bày ý chính xác mà không phải dịch từng chữ.
+  tags: [ielts]
+  level: B2
+  sets:
+    - { title: Nhận diện và xử lý vấn đề, topic: collocation về giải quyết vấn đề, words: 15 }
+    - { title: Đặt mục tiêu và theo dõi kết quả, topic: collocation về mục tiêu và tiến độ, words: 15 }
+    - { title: Đo lường mức độ thay đổi, topic: collocation về số liệu và xu hướng, words: 15 }
+    - { title: Cân nhắc lựa chọn, topic: collocation về lựa chọn và đánh đổi, words: 15 }
+    - { title: Giải thích nguồn cơn, topic: collocation về nguyên nhân và tác động, words: 15 }
+    - { title: Kiểm tra nhận định, topic: collocation về bằng chứng và nghiên cứu, words: 15 }
+    - { title: Quản lý thời gian và nguồn lực, topic: collocation về thời gian và nguồn lực, words: 15 }
+    - { title: Hợp tác trong cộng đồng, topic: collocation về hợp tác và trách nhiệm, words: 15 }
+- slug: ielts-linking-language
+  title: Từ nối cho IELTS Speaking và Writing
+  description: Nối ý đúng quan hệ logic và chọn cách diễn đạt hợp văn nói hoặc văn viết.
+  tags: [ielts]
+  level: B2
+  sets:
+    - { title: Bổ sung và sắp xếp luận điểm, topic: từ nối thêm ý và sắp xếp ý, words: 12 }
+    - { title: Đối chiếu hai góc nhìn, topic: từ nối tương phản và nhượng bộ, words: 12 }
+    - { title: Từ nguyên nhân đến kết quả, topic: từ nối nguyên nhân và hệ quả, words: 12 }
+    - { title: Minh họa và nói rõ hơn, topic: từ nối ví dụ và diễn đạt lại, words: 12 }
+    - { title: Đặt điều kiện và chốt ý, topic: từ nối điều kiện và tổng kết, words: 12 }
+- slug: ielts-speaking-expression
+  title: Cụm diễn đạt giúp nâng band IELTS Speaking
+  description: Phát triển câu trả lời linh hoạt với cụm từ tự nhiên, tránh học thuộc cả bài.
+  tags: [ielts, communication]
+  level: C1
+  sets:
+    - { title: Nêu quan điểm có chừng mực, topic: cụm nêu ý kiến và điều chỉnh mức chắc chắn, words: 10 }
+    - { title: Kể trải nghiệm đáng nhớ, topic: cụm kể chuyện cá nhân, words: 10 }
+    - { title: Gợi tả không gian và bầu không khí, topic: cụm mô tả nơi chốn, words: 10 }
+    - { title: Nói về cảm xúc phức tạp, topic: cụm diễn đạt cảm xúc và phản ứng, words: 10 }
+    - { title: So sánh điều đã và đang thay đổi, topic: cụm so sánh quá khứ và hiện tại, words: 10 }
+    - { title: Suy đoán về tình huống giả định, topic: cụm dự đoán và giả định, words: 10 }
+    - { title: Giữ nhịp khi cần nghĩ thêm, topic: cụm nói tương tác và sửa ý tự nhiên, words: 10 }
+- slug: toeic-workplace-vocabulary
+  title: Tiếng Anh công sở cho TOEIC
+  description: Nhận ra từ khóa trong thông báo, email và hội thoại nơi làm việc.
+  tags: [toeic, work]
+  level: B1
+  sets:
+    - { title: Lịch họp và sắp xếp cuộc hẹn, topic: lịch làm việc và họp, words: 15 }
+    - { title: Tuyển dụng và ngày đầu đi làm, topic: nhân sự và hội nhập, words: 15 }
+    - { title: Đơn hàng và chứng từ, topic: mua hàng và thanh toán, words: 15 }
+    - { title: Công tác và lịch trình di chuyển, topic: chuyến công tác và đặt chỗ, words: 15 }
+    - { title: Hỗ trợ khách hàng sau bán, topic: hỗ trợ khách hàng và đổi trả, words: 15 }
+- slug: thpt-exam-vocabulary
+  title: Từ vựng đọc hiểu cho kỳ thi THPT
+  description: Làm quen nhóm từ hay gặp trong bài đọc, thông báo và câu hỏi theo ngữ cảnh.
+  tags: [thpt]
+  level: B1
+  sets:
+    - { title: Trường học và định hướng tương lai, topic: chủ đề đề thi về học tập và nghề nghiệp, words: 15 }
+    - { title: Bảo tồn thiên nhiên, topic: chủ đề đề thi về hệ sinh thái và bảo tồn, words: 15 }
+    - { title: Tình nguyện và đời sống cộng đồng, topic: chủ đề đề thi về hoạt động xã hội, words: 15 }
+    - { title: Kỹ năng và an toàn trên mạng, topic: chủ đề đề thi về công nghệ và an toàn số, words: 15 }
+    - { title: Nếp sống khỏe, topic: chủ đề đề thi về sức khỏe và thói quen, words: 15 }
+- slug: everyday-communication
+  title: Giao tiếp tiếng Anh mỗi ngày
+  description: Dùng câu ngắn và cụm từ quen thuộc để tự tin xử lý tình huống hằng ngày.
+  tags: [communication]
+  level: A2
+  sets:
+    - { title: Gặp mặt và bắt chuyện, topic: chào hỏi và làm quen, words: 15 }
+    - { title: Mua đồ và gọi món, topic: mua sắm và ăn uống, words: 15 }
+    - { title: Tìm đường và đi lại, topic: chỉ đường và phương tiện, words: 15 }
+    - { title: Hẹn gặp và đổi kế hoạch, topic: lời mời và sắp xếp thời gian, words: 15 }
+    - { title: Nhờ giúp đỡ và báo sự cố, topic: nhờ giúp và xử lý trục trặc thường ngày, words: 15 }

@@ -3,14 +3,10 @@ import { createAdminClient } from "../src/lib/supabase/admin";
 import { GiphyRateLimitError, searchGiphy } from "../src/lib/media/giphy";
 
 /**
- * Gives course vocabulary cards a GIF, like OpenQuiz shows an illustration with every lesson word.
- * Only cards without an image are touched, so it is safe to rerun and never overwrites a
- * learner's or editor's choice. Nouns get a Giphy sticker (a literal drawing of the thing; a noun
- * GIF often hits a film meme, "notebook" returns The Notebook), phrases and verbs get a reaction
- * GIF with a sticker as fallback. Cards sharing a term reuse one search. Requests are paced for
- * Giphy's beta key (about 100 per hour); on a rate-limit reply it stops and reports what is left.
+ * Adds GIFs to course and curated path vocabulary. Existing images stay untouched, including
+ * learner and editor choices. Searches share a query for duplicate terms.
  *
- *   bun scripts/seed-card-gifs.ts --dry-run            count what would be searched
+ *   bun scripts/seed-card-gifs.ts --dry-run
  *   bun scripts/seed-card-gifs.ts --limit 90 --delay 37000
  */
 async function main() {
@@ -23,19 +19,23 @@ async function main() {
   const supabase = createAdminClient();
   if (!supabase || !apiKey) throw new Error("Configure Supabase and GIPHY_API_KEY.");
 
-  const lessons = await supabase.from("course_lessons").select("set_id");
-  if (lessons.error) throw new Error(lessons.error.message);
-  const setIds = lessons.data.map((lesson) => lesson.set_id);
+  const [lessons, paths] = await Promise.all([
+    supabase.from("course_lessons").select("set_id"),
+    supabase.from("learning_paths").select("id").eq("owner_id", process.env.SEED_CONTENT_OWNER_ID ?? ""),
+  ]);
+  if (lessons.error || paths.error) throw new Error(lessons.error?.message ?? paths.error?.message);
+  const pathItems = paths.data.length ? await supabase.from("path_items").select("set_id").in("path_id", paths.data.map(({ id }) => id)) : { data: [], error: null };
+  if (pathItems.error) throw new Error(pathItems.error.message);
+  const setIds = [...new Set([...lessons.data.map((lesson) => lesson.set_id), ...pathItems.data.map((item) => item.set_id)])];
 
   const cards: { id: string; term: string; part_of_speech: string | null }[] = [];
-  for (let from = 0; ; from += 1000) {
+  if (setIds.length) for (let from = 0; ; from += 1000) {
     const page = await supabase.from("cards").select("id, term, part_of_speech").in("set_id", setIds).is("image_url", null).order("id").range(from, from + 999);
     if (page.error) throw new Error(page.error.message);
     cards.push(...page.data);
     if (page.data.length < 1000) break;
   }
 
-  // One search per distinct term; punctuation does not help the search.
   const byQuery = new Map<string, { noun: boolean; ids: string[] }>();
   for (const card of cards) {
     const query = card.term.toLowerCase().replace(/[^\p{L}\p{N}' ]+/gu, " ").replace(/\s+/g, " ").trim();
@@ -44,7 +44,7 @@ async function main() {
     entry.ids.push(card.id);
     byQuery.set(query, entry);
   }
-  console.log(`${setIds.length} course sets, ${cards.length} cards without an image, ${byQuery.size} distinct terms.`);
+  console.log(`${setIds.length} course and path sets, ${cards.length} cards without an image, ${byQuery.size} distinct terms.`);
   if (values["dry-run"]) return;
 
   let searched = 0;

@@ -15,7 +15,9 @@ export default function PrivacyPage() {
         <li><strong>Nội dung học:</strong> bộ từ, thẻ, ảnh bạn gắn vào thẻ, thư mục, tiến độ ôn tập, kết quả bài học và lịch sử luyện nói (dạng văn bản và điểm số).</li>
         <li><strong>Ảnh bạn tải lên:</strong> lưu trong kho riêng gắn với tài khoản của bạn; ảnh trong bộ từ công khai có thể được người khác xem.</li>
         <li><strong>Email nhận tin:</strong> nếu bạn đăng ký nhận tin ở trang chủ, chúng tôi lưu email đó chỉ để báo bài học và tính năng mới. Muốn xoá email khỏi danh sách, hãy gửi yêu cầu qua trang GitHub của dự án.</li>
+        <li><strong>Bảng xếp hạng tuần:</strong> người học khác thấy tên hiển thị và điểm XP tuần của bạn (không bao giờ thấy email). Bạn có thể tắt việc hiện tên ở trang Tài khoản.</li>
         <li><strong>Số lượt dùng AI:</strong> đếm theo ngày để giới hạn chi phí, không chứa nội dung câu hỏi.</li>
+        <li><strong>Góp ý và báo lỗi:</strong> nội dung bạn gửi qua biểu mẫu góp ý và trang bạn đang ở.</li>
       </ul>
 
       <h2>Giọng nói</h2>

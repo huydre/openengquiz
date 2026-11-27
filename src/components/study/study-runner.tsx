@@ -13,6 +13,8 @@ import { STUDY_MODE_META } from "./study-mode-meta";
 import { ModeIntro, OptionPill } from "./mode-shell";
 import type { QuestionType, StudyCard, StudyMode } from "@/lib/study/study-types";
 
+const STAGE_LABELS = { recognition: "Nhận diện", recall: "Nhớ lại", review: "Ôn lại từ đã thuộc" } as const;
+
 const QUIZ_TYPES: { type: QuestionType; label: string }[] = [
   { type: "multiple_choice", label: "Trắc nghiệm" },
   { type: "true_false", label: "Đúng / Sai" },
@@ -166,7 +168,7 @@ export function StudyRunner({ setId, title, mode, cards, highScore = 0 }: {
         <>
           {mode === "learn" ? (
             <p className="text-muted-foreground text-sm font-extrabold">
-              Đợt {session.learn.batch} · {session.current!.type === "multiple_choice" ? "Nhận diện nghĩa" : "Tự gõ lại từ"}
+              Đợt {session.learn.batch} · {STAGE_LABELS[session.learn.queue[0]?.stage ?? "recognition"]}
             </p>
           ) : null}
           <StudyQuestion

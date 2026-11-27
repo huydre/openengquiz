@@ -2,12 +2,15 @@ import { gradeAttempt } from "./answer-matcher";
 import { cardDefinition, type StudyAttempt, type StudyCard, type StudyMode } from "./study-types";
 
 const allowedTypes: Record<StudyMode, StudyAttempt["question_type"][]> = {
-  learn: ["multiple_choice", "learn_type"],
+  learn: ["multiple_choice", "match", "learn_type", "fill", "dictation_term"],
   quiz: ["multiple_choice", "true_false", "fill", "match"],
   dictation: ["dictation_term", "dictation_example"],
   writing: ["writing"],
   game: ["game"],
 };
+
+const learnRecognitionTypes: StudyAttempt["question_type"][] = ["multiple_choice", "match"];
+const learnRecallTypes: StudyAttempt["question_type"][] = ["learn_type", "fill", "dictation_term"];
 
 export function gradeStudySession(
   mode: StudyMode,
@@ -30,14 +33,28 @@ export function gradeStudySession(
     return { ...attempt, correct: gradeAttempt(attempt, card) };
   });
   if (mode === "learn") {
-    const choicePassed = new Set<string>();
+    // A card is mastered once a correct recognition answer (multiple_choice or match) is
+    // followed by a correct recall answer (learn_type, fill or dictation_term). Reviews are
+    // not flagged by the client: a recognition answer on an already-mastered card is a
+    // review, so a wrong one demotes the card and it must pass recognition then recall
+    // again, while a correct one keeps it mastered.
+    const recognitionPassed = new Set<string>();
     const mastered = new Set<string>();
     for (const attempt of graded) {
-      if (attempt.question_type === "multiple_choice" && attempt.correct) {
-        choicePassed.add(attempt.card_id);
-      }
-      if (attempt.question_type === "learn_type" && attempt.correct && choicePassed.has(attempt.card_id)) {
-        mastered.add(attempt.card_id);
+      if (learnRecognitionTypes.includes(attempt.question_type)) {
+        if (attempt.correct) {
+          recognitionPassed.add(attempt.card_id);
+        } else {
+          recognitionPassed.delete(attempt.card_id);
+          mastered.delete(attempt.card_id);
+        }
+      } else if (learnRecallTypes.includes(attempt.question_type)) {
+        if (attempt.correct) {
+          if (recognitionPassed.has(attempt.card_id)) mastered.add(attempt.card_id);
+        } else if (mastered.has(attempt.card_id)) {
+          mastered.delete(attempt.card_id);
+          recognitionPassed.delete(attempt.card_id);
+        }
       }
     }
     if (mastered.size !== cards.length) throw new Error("Chưa hoàn thành tất cả thẻ.");

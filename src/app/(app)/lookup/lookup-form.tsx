@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useState, type FormEvent } from "react";
+import { useActionState, useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { ArrowRight, Check, Languages, Plus, Search, Volume2 } from "lucide-react";
 import { LogoLoader } from "@/components/layout/logo-loader";
@@ -43,8 +43,8 @@ function cardFor(result: LookupResult, meaning: LookupMeaning): LookupResult {
   };
 }
 
-export function LookupForm({ sets }: { sets: SetOption[] }) {
-  const [term, setTerm] = useState("");
+export function LookupForm({ sets, initialTerm = "" }: { sets: SetOption[]; initialTerm?: string }) {
+  const [term, setTerm] = useState(initialTerm);
   const [result, setResult] = useState<LookupResult | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -90,6 +90,14 @@ export function LookupForm({ sets }: { sets: SetOption[] }) {
       if (pendingRequest.current === controller) setLoading(false);
     }
   }
+
+  // Look up the word passed in the URL once, when the page opens.
+  const lookedUpInitial = useRef(false);
+  useEffect(() => {
+    if (!initialTerm || lookedUpInitial.current) return;
+    lookedUpInitial.current = true;
+    void lookup(initialTerm);
+  }, [initialTerm]);
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

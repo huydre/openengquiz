@@ -1,9 +1,12 @@
 import { createElement, Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, BookOpen, Check, Flame, GraduationCap, Map as MapIcon, RotateCcw, Search, Sparkles, type LucideIcon } from "lucide-react";
+import { ArrowRight, BookOpen, Check, Flame, GraduationCap, Map as MapIcon, RotateCcw, Search, Snowflake, Sparkles, type LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { currentStreak, vietnamDay } from "@/lib/srs/activity";
+import { getRecentSets, getSuggestedPaths } from "@/lib/paths/path-data";
+import { getStreakStatus } from "@/lib/srs/streak-status";
+import { PathCard, RecentSetCard } from "@/components/paths/path-cards";
+import { vietnamDay } from "@/lib/srs/activity";
 import { LogoLoader } from "@/components/layout/logo-loader";
 import { lessonIcon } from "@/components/courses/lesson-icons";
 import { buttonVariants } from "@/components/ui/button";
@@ -25,13 +28,13 @@ export default function HomePage() {
 const WEEKDAYS = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 
 /** The last 7 Vietnam calendar days, oldest first, with whether the learner studied on each. */
-function lastWeek(activeDays: Set<string>, now: Date) {
+function lastWeek(activeDays: Set<string>, frozenDays: Set<string>, now: Date) {
   const today = new Date(`${vietnamDay(now)}T00:00:00.000Z`);
   return Array.from({ length: 7 }, (_, index) => {
     const day = new Date(today);
     day.setUTCDate(today.getUTCDate() - (6 - index));
     const key = day.toISOString().slice(0, 10);
-    return { key, label: WEEKDAYS[day.getUTCDay()], active: activeDays.has(key), today: index === 6 };
+    return { key, label: WEEKDAYS[day.getUTCDay()], active: activeDays.has(key), frozen: frozenDays.has(key), today: index === 6 };
   });
 }
 
@@ -53,7 +56,7 @@ async function HomeContent() {
   }
 
   const now = new Date();
-  const [{ count: due }, { count: learned }, { data: activity }] = await Promise.all([
+  const [{ count: due }, { count: learned }, streakStatus] = await Promise.all([
     supabase.from("review_states")
       .select("card_id", { count: "exact", head: true })
       .eq("user_id", user.id)
@@ -61,15 +64,11 @@ async function HomeContent() {
     supabase.from("review_states")
       .select("card_id", { count: "exact", head: true })
       .eq("user_id", user.id),
-    supabase.from("user_daily_activity")
-      .select("day, reviews, studied")
-      .eq("user_id", user.id)
-      .order("day", { ascending: false })
-      .limit(1000),
+    getStreakStatus(supabase),
   ]);
-  const activeDays = new Set((activity ?? []).filter((day) => day.reviews + day.studied > 0).map((day) => day.day));
-  const streak = currentStreak(activeDays, now);
-  const week = lastWeek(activeDays, now);
+  // Streak freezes cover missed days; sync_streak (inside getStreakStatus) applies and awards them.
+  const { streak, freezes } = streakStatus;
+  const week = lastWeek(new Set(streakStatus.activeDays), new Set(streakStatus.frozenDays), now);
   const dueCount = due ?? 0;
   const name = profile?.display_name;
 
@@ -96,19 +95,28 @@ async function HomeContent() {
               <p className="text-3xl leading-none font-black tabular-nums">{streak}</p>
               <p className="text-muted-foreground text-sm font-bold">ngày học liên tiếp</p>
             </div>
+            <span
+              title="Lượt đóng băng tự giữ chuỗi khi bạn lỡ một ngày. Cứ 7 ngày liên tiếp được thêm 1, giữ tối đa 2."
+              className={cn("ml-auto flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-black", freezes ? "bg-secondary/15 text-secondary" : "bg-muted text-muted-foreground")}
+            >
+              <Snowflake aria-hidden="true" className="size-4" /> {freezes}/2
+              <span className="sr-only">lượt đóng băng chuỗi</span>
+            </span>
           </div>
           <ol className="grid grid-cols-7 gap-1.5" aria-label="7 ngày gần nhất">
             {week.map((day) => (
               <li key={day.key} className="flex flex-col items-center gap-1">
                 <span
-                  aria-label={`${day.label}: ${day.active ? "có học" : "chưa học"}`}
+                  aria-label={`${day.label}: ${day.active ? "có học" : day.frozen ? "đã đóng băng" : "chưa học"}`}
                   className={cn(
                     "grid size-8 place-items-center rounded-full border-2",
-                    day.active ? "border-brand-orange bg-brand-orange text-white" : "bg-muted/50 border-transparent",
+                    day.active ? "border-brand-orange bg-brand-orange text-white"
+                      : day.frozen ? "border-secondary bg-secondary/15 text-secondary"
+                        : "bg-muted/50 border-transparent",
                     day.today && !day.active && "border-brand-orange/50 border-dashed",
                   )}
                 >
-                  {day.active ? <Check aria-hidden="true" className="size-4 stroke-[3]" /> : null}
+                  {day.active ? <Check aria-hidden="true" className="size-4 stroke-[3]" /> : day.frozen ? <Snowflake aria-hidden="true" className="size-4" /> : null}
                 </span>
                 <span className={cn("text-xs font-bold", day.today ? "text-foreground" : "text-muted-foreground")}>{day.label}</span>
               </li>
@@ -133,6 +141,14 @@ async function HomeContent() {
         <StatCard href="/stats" icon={BookOpen} tone="text-secondary bg-secondary/15" value={learned ?? 0} label="Từ đã học" action="Xem thống kê" />
       </div>
 
+      <Suspense fallback={null}>
+        <RecentSets db={supabase} userId={user.id} />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <SuggestedPaths db={supabase} goal={profile?.goal ?? null} />
+      </Suspense>
+
       <section aria-labelledby="practice-title" className="space-y-3">
         <h2 id="practice-title" className="text-xl font-black">Luyện tập nhanh</h2>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -143,6 +159,40 @@ async function HomeContent() {
         </div>
       </section>
     </div>
+  );
+}
+
+/** Sets the learner studied most recently, to jump back in. Hidden until there are some. */
+async function RecentSets({ db, userId }: { db: Db; userId: string }) {
+  const sets = await getRecentSets(db, userId, 4).catch(() => []);
+  if (!sets.length) return null;
+  return (
+    <section aria-labelledby="recent-title" className="space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <h2 id="recent-title" className="text-xl font-black">Bộ từ đang học</h2>
+        <Link href="/sets" className="text-primary-edge text-sm font-extrabold">Xem tất cả</Link>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {sets.map((set) => <RecentSetCard key={set.id} set={set} />)}
+      </div>
+    </section>
+  );
+}
+
+/** Curated learning paths, the learner's goal first. */
+async function SuggestedPaths({ db, goal }: { db: Db; goal: string | null }) {
+  const paths = await getSuggestedPaths(db, goal, 3).catch(() => []);
+  if (!paths.length) return null;
+  return (
+    <section aria-labelledby="paths-title" className="space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <h2 id="paths-title" className="text-xl font-black">Lộ trình gợi ý</h2>
+        <Link href="/paths" className="text-primary-edge text-sm font-extrabold">Xem tất cả</Link>
+      </div>
+      <div className="grid gap-3 md:grid-cols-3">
+        {paths.map((path, index) => <PathCard key={path.id} path={path} index={index} />)}
+      </div>
+    </section>
   );
 }
 

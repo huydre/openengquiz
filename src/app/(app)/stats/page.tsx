@@ -2,7 +2,8 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { currentStreak, vietnamDay } from "@/lib/srs/activity";
+import { vietnamDay } from "@/lib/srs/activity";
+import { getStreakStatus } from "@/lib/srs/streak-status";
 import { addDays, dayStartUtc } from "@/components/review/vietnam-day";
 import { ActivityCharts } from "./activity-charts";
 import { LogoLoader } from "@/components/layout/logo-loader";
@@ -37,8 +38,7 @@ async function StatsContent() {
       .eq("user_id", user.id).gte("rating", 2),
     supabase.from("user_daily_activity").select("day,reviews,studied")
       .eq("user_id", user.id).gte("day", firstHeatDay).order("day", { ascending: true }),
-    supabase.from("user_daily_activity").select("day,reviews,studied")
-      .eq("user_id", user.id).order("day", { ascending: false }).limit(1000),
+    getStreakStatus(supabase),
     ...forecastDays.map((day, index) => {
       let query = supabase.from("review_states").select("card_id", { count: "exact", head: true })
         .eq("user_id", user.id).lt("due_at", dayStartUtc(addDays(day, 1)));
@@ -47,7 +47,7 @@ async function StatsContent() {
     }),
   ]);
 
-  const errors = [due, mastered, allLogs, remembered, activityResult, streakResult, ...forecastResults]
+  const errors = [due, mastered, allLogs, remembered, activityResult, ...forecastResults]
     .some((result) => result.error);
   if (errors) {
     return (
@@ -60,9 +60,8 @@ async function StatsContent() {
   }
 
   const activity = activityResult.data ?? [];
-  const activeDays = (streakResult.data ?? [])
-    .filter((entry) => entry.reviews + entry.studied > 0).map((entry) => entry.day);
-  const streak = currentStreak(activeDays, new Date());
+  // Same streak as the home page, counting days covered by a streak freeze.
+  const streak = streakResult.streak;
   const retention = allLogs.count ? Math.round((remembered.count ?? 0) / allLogs.count * 100) : null;
   const forecast = forecastDays.map((day, index) => ({ day, count: forecastResults[index].count ?? 0 }));
 

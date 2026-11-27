@@ -7,6 +7,7 @@ import { transcribeRecording } from "@/lib/speech/transcribe";
 import { MAX_AUDIO_BYTES, wavDuration } from "@/lib/speech/speaking-wav";
 import { parseMultipart, readBoundedBody } from "@/lib/http/multipart";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const maxBody = MAX_AUDIO_BYTES + 32_768;
 const textSchema = z.string().trim().min(1).max(2000);
@@ -101,9 +102,14 @@ async function assess(request: Request, signal: AbortSignal) {
     }
   }
   signal.throwIfAborted();
-  const { error } = await supabase.from("speaking_attempts").insert({
-    user_id: user.id, card_id: input.cardId, mode: input.mode, prompt_text: prompt, transcript, pron, feedback,
-  }).abortSignal(signal);
-  if (error) console.error("Speaking history insert failed", error.code);
+  // speaking_attempts INSERT is service-role only (leaderboard XP must not be
+  // forgeable by clients); the admin client bypasses RLS for this server-owned write.
+  const admin = createAdminClient();
+  const { error } = admin
+    ? await admin.from("speaking_attempts").insert({
+        user_id: user.id, card_id: input.cardId, mode: input.mode, prompt_text: prompt, transcript, pron, feedback,
+      }).abortSignal(signal)
+    : { error: new Error("admin client unavailable") };
+  if (error) console.error("Speaking history insert failed", error.message ?? error);
   return Response.json({ pron, transcript, feedback, saved: !error });
 }

@@ -16,7 +16,7 @@ export function useStudySession(setId: string, mode: StudyMode, cards: StudyCard
   const [sessionId, setSessionId] = useState("");
   const [questions, setQuestions] = useState<StudyQuestion[]>([]);
   const [index, setIndex] = useState(0);
-  const [learn, setLearn] = useState(() => createLearnState(cards.map((card) => card.id)));
+  const [learn, setLearn] = useState(() => createLearnState(cards));
   const [attempts, setAttempts] = useState<RecordedAttempt[]>([]);
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState("");
@@ -24,7 +24,7 @@ export function useStudySession(setId: string, mode: StudyMode, cards: StudyCard
   const current: StudyQuestion | undefined = mode === "learn"
     ? learn.queue[0] && {
       cardId: learn.queue[0].cardId,
-      type: learn.queue[0].stage === "choice" ? "multiple_choice" : "learn_type",
+      type: learn.queue[0].type,
     }
     : questions[index];
 
@@ -44,7 +44,7 @@ export function useStudySession(setId: string, mode: StudyMode, cards: StudyCard
       setIndex(0);
       setAttempts([]);
       attemptGuard.current = -1;
-      setLearn(createLearnState(cards.map((card) => card.id)));
+      setLearn(createLearnState(cards));
       setStatus("active");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Không bắt đầu được phiên học.");

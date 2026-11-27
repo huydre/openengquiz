@@ -100,6 +100,12 @@ Code từ registry giữ nguyên bản gốc. `eslint.config.mjs` hạ `react-ho
 | Speaking / phát âm | `audio-player-with-waveform` |
 | Chế độ học | `fluid-tabs`, `continuous-tabs` |
 
+## Học và streak
+
+- Phiên Học chỉ hoàn tất khi mọi thẻ qua nhận diện rồi nhớ lại. Ôn sai hủy trạng thái thuộc của thẻ đó.
+- `sync_streak()` dùng ngày Việt Nam và chỉ tính `user_daily_activity.reviews + studied > 0`. Ngày đóng băng giữ chuỗi, không tạo hoạt động thật hay XP.
+- Bảng hạng tuần dùng `reviews + studied + 10 × số hoạt động khóa học hoàn tất + 5 × số lượt luyện nói`, tính từ thứ Hai 00:00 đến trước thứ Hai kế tiếp theo giờ Việt Nam. `studied` hiện đếm phiên đã lưu, không đếm thẻ.
+
 ## Chung
 
 - TypeScript strict; file kebab-case.
