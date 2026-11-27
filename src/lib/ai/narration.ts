@@ -30,7 +30,7 @@ export async function generateLessonNarration(
   signal: AbortSignal,
 ): Promise<z.infer<typeof narrationLinesSchema>> {
   const result = await generateText({
-    model: getModel(),
+    model: getModel("narration"),
     output: Output.object({ schema: narrationSchema }),
     system:
       "You write short spoken lines for an English tutor inside a Vietnamese learner's lesson app. " +
