@@ -32,6 +32,7 @@ export function CardImagePicker({ setId, card, open, onOpenChange }: {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [provider, setProvider] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const searched = useRef(false);
 
@@ -51,6 +52,7 @@ export function CardImagePicker({ setId, card, open, onOpenChange }: {
       }
       if (!response.ok) throw new Error(body.error ?? "Chưa tìm được ảnh.");
       setImages(body.images ?? []);
+      setProvider(typeof body.provider === "string" ? body.provider : null);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Chưa tìm được ảnh.");
     } finally {
@@ -164,6 +166,13 @@ export function CardImagePicker({ setId, card, open, onOpenChange }: {
           ) : (
             <p className="text-muted-foreground text-center text-sm font-semibold">Không tìm thấy ảnh. Thử từ khoá khác nhé.</p>
           )
+        ) : null}
+
+        {kind === "gif" && provider && images?.length ? (
+          // Attribution required by the GIF provider's terms.
+          <p className="text-muted-foreground text-right text-xs font-extrabold tracking-wide uppercase">
+            Powered by {provider === "giphy" ? "GIPHY" : "Tenor"}
+          </p>
         ) : null}
 
         <div className="flex flex-wrap gap-2 border-t-2 pt-4">

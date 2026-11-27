@@ -68,7 +68,7 @@ export async function GET(request: Request) {
           title: gif.content_description || query,
         }));
       }
-      return Response.json({ images: images.filter((image) => image.url.startsWith("https://")) });
+      return Response.json({ images: images.filter((image) => image.url.startsWith("https://")), provider: giphyKey ? "giphy" : "tenor" });
     } catch (error) {
       console.error("GIF search failed", error instanceof Error ? error.message : error);
       return Response.json({ error: "Chưa tìm được GIF lúc này. Thử lại sau nhé." }, { status: 502 });
