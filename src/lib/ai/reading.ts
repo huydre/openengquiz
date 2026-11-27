@@ -11,6 +11,23 @@ export const readingQuestionSchema = z.object({
 });
 export type ReadingQuestion = z.infer<typeof readingQuestionSchema>;
 
+/**
+ * Returns the question with its options in random order and answer_index moved to match.
+ * Models tend to put the right answer first, which learners quickly notice.
+ */
+export function shuffleQuestionOptions(question: ReadingQuestion, random: () => number = Math.random): ReadingQuestion {
+  const order = question.options.map((_, index) => index);
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return {
+    ...question,
+    options: order.map((index) => question.options[index]),
+    answer_index: order.indexOf(question.answer_index),
+  };
+}
+
 export const readingPassageSchema = z.object({
   content: z.string().trim().min(1).max(12000),
   questions: z.array(readingQuestionSchema).min(3).max(5),
