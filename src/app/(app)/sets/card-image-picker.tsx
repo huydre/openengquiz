@@ -26,20 +26,29 @@ export function CardImagePicker({ setId, card, open, onOpenChange }: {
 }) {
   const router = useRouter();
   const [query, setQuery] = useState(card.term);
+  const [kind, setKind] = useState<"gif" | "photo">("gif");
   const [images, setImages] = useState<Found[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
   const searched = useRef(false);
 
-  async function search(value: string) {
+  async function search(value: string, type: "gif" | "photo" = kind) {
     if (!value.trim()) return;
     setSearching(true);
     setError("");
     try {
-      const response = await fetch(`/api/media/search?q=${encodeURIComponent(value.trim())}`);
+      const response = await fetch(`/api/media/search?q=${encodeURIComponent(value.trim())}&type=${type}`);
       const body = await response.json().catch(() => ({}));
+      // No GIF provider configured: fall back to photos so the picker is still useful.
+      if (response.status === 503 && type === "gif") {
+        setKind("photo");
+        setNotice("Kho GIF chưa được cấu hình, đang hiện ảnh chụp.");
+        await search(value, "photo");
+        return;
+      }
       if (!response.ok) throw new Error(body.error ?? "Chưa tìm được ảnh.");
       setImages(body.images ?? []);
     } catch (cause) {
@@ -49,12 +58,13 @@ export function CardImagePicker({ setId, card, open, onOpenChange }: {
     }
   }
 
-  // Search once with the card's term when the dialog first opens.
+  // Search once with the card's term when the dialog first opens (later searches are user-driven).
   useEffect(() => {
     if (open && !searched.current) {
       searched.current = true;
       void search(card.term);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per opening, not on every search change
   }, [open, card.term]);
 
   async function save(url: string | null) {
@@ -99,18 +109,34 @@ export function CardImagePicker({ setId, card, open, onOpenChange }: {
       <DialogContent aria-describedby={undefined} className="bg-card max-h-[88vh] overflow-auto rounded-3xl border-2 sm:max-w-2xl [&>*]:min-w-0">
         <DialogTitle className="pr-8 text-xl font-black">Ảnh cho &ldquo;{card.term}&rdquo;</DialogTitle>
 
+        <div className="bg-muted/60 flex w-fit rounded-2xl p-1" role="tablist" aria-label="Loại ảnh">
+          {(["gif", "photo"] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              aria-selected={kind === value}
+              onClick={() => { setKind(value); setImages(null); void search(query, value); }}
+              className={cn("rounded-xl px-4 py-1.5 text-sm font-extrabold", kind === value ? "bg-card shadow-sm" : "text-muted-foreground")}
+            >
+              {value === "gif" ? "GIF meme" : "Ảnh chụp"}
+            </button>
+          ))}
+        </div>
+
         <form onSubmit={onSubmit} className="flex gap-2" role="search">
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             aria-label="Tìm ảnh"
-            placeholder="Tìm ảnh minh hoạ"
+            placeholder={kind === "gif" ? "Tìm GIF, ví dụ: happy, tired, let\u2019s go" : "Tìm ảnh minh hoạ"}
             className="bg-muted/40 focus-visible:border-primary h-11 min-w-0 flex-1 rounded-2xl border-2 px-4 font-semibold outline-none"
           />
           <Button type="submit" size="lg" disabled={searching}><Search aria-hidden="true" /> Tìm</Button>
         </form>
 
         {searching ? <LogoLoader size="sm" label="Đang tìm ảnh..." /> : null}
+        {notice ? <p role="status" className="text-muted-foreground text-sm font-semibold">{notice}</p> : null}
         {error ? <p role="alert" className="text-destructive text-sm font-bold">{error}</p> : null}
 
         {images && !searching ? (
@@ -152,7 +178,7 @@ export function CardImagePicker({ setId, card, open, onOpenChange }: {
           ) : null}
           {saving ? <LogoLoader size="sm" label="Đang lưu..." /> : null}
         </div>
-        <p className="text-muted-foreground text-xs">Ảnh từ kho ảnh miễn phí (Pixabay hoặc Openverse). Ảnh tải lên tối đa 2 MB.</p>
+        <p className="text-muted-foreground text-xs">GIF từ Giphy hoặc Tenor, ảnh chụp từ Pixabay hoặc Openverse, đều lọc nội dung an toàn. Ảnh tải lên tối đa 2 MB.</p>
       </DialogContent>
     </Dialog>
   );
