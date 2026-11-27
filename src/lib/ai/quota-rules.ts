@@ -4,8 +4,7 @@
  */
 export const AI_DAILY_LIMITS = {
   "generate-cards": 50,
-  "generate-path": 60,
-  "seed-paths": 1500,
+  "seed-courses": 1500,
   lookup: 300,
   grammar: 100,
   reading: 30,

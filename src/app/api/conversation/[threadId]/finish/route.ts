@@ -43,6 +43,7 @@ export async function POST(request: Request, context: { params: Promise<{ thread
     const history = (messages.data ?? []) as { role: string; content: string }[];
     const expectedTurns = history.filter((m) => m.role === "user").length;
     if (expectedTurns === 0) return Response.json({ error: "Cuộc gọi chưa có lượt nào." }, { status: 409 });
+    if (scenario.data === "course" && expectedTurns < 4) return Response.json({ error: "Cần ít nhất 4 lượt hội thoại." }, { status: 409 });
     if (expectedTurns > MAX_CALL_TURNS) return Response.json({ error: "Cuộc gọi vượt quá số lượt." }, { status: 409 });
 
     const level = cefrSchema.safeParse(profile.data?.level).data ?? "B1";

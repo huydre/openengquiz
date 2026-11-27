@@ -1,8 +1,12 @@
-# Phase 08: Lộ trình học
+# Phase 08: Khoá học IELTS
 
-Context: [plan.md](plan.md) · Research mục 3.6
+Context: [plan.md](plan.md) · [Brief Khoá học](../reports/from-claude-to-omp-261127-1449-ielts-course-brief.md)
 
-Status: DONE_WITH_CONCERNS (27/11/2026). Migration đã đẩy; catalog 18 lộ trình / 240 bộ tham khảo cấu trúc OpenQuiz (docs/openquiz-paths-reference.md). Còn: chạy `pnpm seed:paths` (chờ user duyệt), thử toàn luồng khi đăng nhập.
+Khoá học thay chức năng Lộ trình cũ bên dưới. IELTS có 7 cấp, 42 phần, 210 bài, mỗi bài gồm nói trước, học từ, nói lại và hội thoại. Tiến độ lưu theo người; hoàn thành bài mới mở bài kế tiếp. Cấp đã chọn và mục tiêu IELTS/CEFR từ onboarding điều khiển Học tiếp.
+
+Áp `20261127160000_courses.sql`, chạy seed có chủ nội dung trên DB thử và duyệt nội dung trước khi xuất bản thật. Migration giữ bộ từ và thẻ của lộ trình cũ, chỉ gỡ metadata và liên kết.
+
+## Lịch sử: Lộ trình học (đã thay thế)
 
 ## Requirements
 

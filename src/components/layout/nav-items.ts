@@ -12,7 +12,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/pronunciation", label: "Luyện phát âm" },
   { href: "/history", label: "Lịch sử học AI" },
   { href: "/stats", label: "Thống kê" },
-  { href: "/paths", label: "Lộ trình" },
+  { href: "/courses", label: "Khoá học" },
   { href: "/classes", label: "Lớp học", comingSoon: true },
   { href: "/lookup", label: "Tra từ" },
 ];

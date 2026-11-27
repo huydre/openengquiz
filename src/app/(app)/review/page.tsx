@@ -13,7 +13,7 @@ import { LogoLoader } from "@/components/layout/logo-loader";
 
 export const metadata = { title: "Ôn tập" };
 
-type Search = Promise<{ set?: string | string[]; path?: string | string[] }>;
+type Search = Promise<{ set?: string | string[] }>;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const CARD_SELECT = "card_id,state,fsrs,due_at,reps,lapses,last_review_at,version,cards!inner(id,set_id,term,ipa,part_of_speech,definition_vi,definition_en,example_en,example_vi,study_sets!inner(id,title))";
 
@@ -26,8 +26,7 @@ export default function ReviewPage({ searchParams }: { searchParams: Search }) {
 }
 
 async function ReviewContent({ searchParams }: { searchParams: Search }) {
-  const { set: setParam, path: pathParam } = await searchParams;
-  const pathId = Array.isArray(pathParam) ? pathParam[0] : pathParam;
+  const { set: setParam } = await searchParams;
   const rawSetId = Array.isArray(setParam) ? setParam[0] : setParam;
   // "all" comes from the filter select (Radix items cannot have an empty value).
   const setId = rawSetId === "all" ? undefined : rawSetId;
@@ -37,18 +36,6 @@ async function ReviewContent({ searchParams }: { searchParams: Search }) {
 
   if (setId && !UUID.test(setId)) {
     return <QueueError message="Mã bộ từ không hợp lệ." />;
-  }
-  if (pathId !== undefined && !UUID.test(pathId)) return <QueueError message="Mã lộ trình không hợp lệ." />;
-  let path: { title: string } | null = null;
-  let pathSets: string[] = [];
-  if (pathId) {
-    const [pathResult, items] = await Promise.all([
-      supabase.from("learning_paths").select("title").eq("id", pathId).eq("status", "ready").maybeSingle(),
-      supabase.from("path_items").select("set_id").eq("path_id", pathId),
-    ]);
-    if (pathResult.error || items.error || !pathResult.data) return <QueueError message="Không tải được lộ trình." />;
-    path = pathResult.data;
-    pathSets = items.data.map(({ set_id }) => set_id);
   }
 
   const now = new Date();
@@ -70,13 +57,12 @@ async function ReviewContent({ searchParams }: { searchParams: Search }) {
       .order("due_at", { ascending: true });
     query = state === "new" ? query.eq("state", "new") : query.neq("state", "new");
     if (setId) query = query.eq("cards.set_id", setId);
-    if (pathId) query = query.in("cards.set_id", pathSets);
     return query.limit(state === "new" ? newRemaining : 1000);
   }
 
   const [{ data: learned, error: learnedError }, newResult, { data: setRows, error: setsError }] = await Promise.all([
-    !pathId || pathSets.length ? dueQuery("learned") : Promise.resolve({ data: [], error: null }),
-    newRemaining && (!pathId || pathSets.length) ? dueQuery("new") : Promise.resolve({ data: [], error: null }),
+    dueQuery("learned"),
+    newRemaining ? dueQuery("new") : Promise.resolve({ data: [], error: null }),
     supabase.from("review_states")
       .select("cards!inner(set_id,study_sets!inner(id,title))")
       .eq("user_id", user.id).limit(1000),
@@ -115,19 +101,16 @@ async function ReviewContent({ searchParams }: { searchParams: Search }) {
     return card && set ? [[card.set_id, set.title] as [string, string]] : [];
   });
   const sets = [...new Map([...setPairs, ...items.map((item) => [item.setId, item.setTitle] as [string, string])]).entries()]
-    .filter(([id]) => !pathId || pathSets.includes(id))
     .sort((left, right) => left[1].localeCompare(right[1], "vi"));
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <header className="space-y-2">
         <h1 className="text-3xl font-black">Ôn tập</h1>
-        {path && <Link href={`/paths/${pathId}`} className="text-primary font-bold underline">{path.title}</Link>}
         <p className="text-muted-foreground">Nhớ lại trước khi lật thẻ, rồi chọn mức độ bạn nhớ.</p>
       </header>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <form action="/review" className="flex items-center gap-2">
-          {pathId && <input type="hidden" name="path" value={pathId} />}
           <label htmlFor="review-set" className="font-bold">Bộ từ</label>
           <Select name="set" defaultValue={setId ?? "all"}>
             <SelectTrigger id="review-set" className="max-w-52">
@@ -149,7 +132,7 @@ async function ReviewContent({ searchParams }: { searchParams: Search }) {
       </div>
       <NewCardLimitSetting currentLimit={newCardLimit} />
       <ReviewSession
-        key={`${pathId ?? "all"}:${setId ?? "all"}:${newCardLimit}`}
+        key={`${setId ?? "all"}:${newCardLimit}`}
         items={items}
         newRemaining={newRemaining}
       />

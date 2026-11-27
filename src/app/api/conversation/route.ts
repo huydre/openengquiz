@@ -39,6 +39,13 @@ export async function POST(request: Request) {
     if (!cards.count) {
       return Response.json({ error: "Bộ từ chưa có thẻ để luyện hội thoại." }, { status: 422 });
     }
+    if (scenario === "course") {
+      const lesson = await supabase.from("course_lessons").select("id,lesson_progress(step,completed_at)").eq("set_id", setId).abortSignal(signal).maybeSingle();
+      if (lesson.error) throw lesson.error;
+      if (!lesson.data?.lesson_progress.some((row) => row.step === 4 && !row.completed_at)) {
+        return Response.json({ error: "Bước hội thoại chưa mở." }, { status: 409 });
+      }
+    }
 
     await assertQuota(supabase, user.id, "conversation");
     const { data: thread, error } = await supabase

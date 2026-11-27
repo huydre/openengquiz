@@ -29,7 +29,7 @@ const ICONS: Record<string, { icon: LucideIcon; color: string }> = {
   "/home": { icon: Home, color: "text-primary" },
   "/sets": { icon: BookOpen, color: "text-secondary" },
   "/review": { icon: RotateCcw, color: "text-brand-orange" },
-  "/paths": { icon: Map, color: "text-brand-grape" },
+  "/courses": { icon: Map, color: "text-brand-grape" },
   "/pronunciation": { icon: Mic, color: "text-destructive" },
   "/lookup": { icon: Search, color: "text-secondary" },
   "/history": { icon: History, color: "text-brand-orange" },
@@ -38,7 +38,7 @@ const ICONS: Record<string, { icon: LucideIcon; color: string }> = {
 };
 
 /** Learning destinations go first; everything else is listed under "Công cụ". */
-const LEARN = new Set(["/home", "/sets", "/review", "/paths", "/pronunciation"]);
+const LEARN = new Set(["/home", "/sets", "/review", "/courses", "/pronunciation"]);
 
 const ITEM_CLASS = cn(
   "h-12 gap-3 rounded-2xl border-2 border-transparent px-3 text-sm font-extrabold tracking-wide uppercase",

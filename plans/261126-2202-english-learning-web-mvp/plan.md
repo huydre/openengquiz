@@ -1,7 +1,7 @@
 # Plan: Web học tiếng Anh: MVP đầy đủ tính năng
 
-- Status: in progress (27/11/2026). Phase 01 đến 08 đã có code, mọi migration đã đẩy, CI xanh trên branch `feat/mvp-core` (https://github.com/huydre/openengquiz). **Phase 09 (lớp học) hoãn theo quyết định của user.** Còn: phase 10 (extension), 11 (hoàn thiện, deploy), seed nội dung lộ trình, đăng nhập Google, thử toàn luồng khi đăng nhập.
-  **Phase 07 (Grammar, Reading, AI Call): DONE_WITH_CONCERNS**; DeepSeek thật đã qua smoke, chờ đẩy migration lịch sử và thử toàn luồng đăng nhập. **Phase 08 (Lộ trình học): DONE_WITH_CONCERNS**; kiểm cục bộ đã qua, chờ migration, seed, duyệt nội dung và thử toàn luồng đăng nhập.
+- Status: in progress. Phase 09 (lớp học) hoãn theo quyết định của user. Còn phase 10 (extension), phase 11 (deploy), đăng nhập Google và kiểm toàn luồng đăng nhập.
+  **Phase 07 (Grammar, Reading, AI Call): DONE_WITH_CONCERNS**. **Phase 08 (Khoá học IELTS):** đã áp migration Supabase; còn seed, duyệt từ và thử với dịch vụ thật.
 - Ngày: 26/11/2026
 - Research gốc: [docs/openquiz-research.md](../../docs/openquiz-research.md)
 
@@ -13,7 +13,7 @@
 | Mô hình | **Miễn phí hoàn toàn**, không thanh toán, không Premium |
 | Frontend | Next.js (App Router) + TypeScript + Tailwind + **Watermelon UI làm UI chính** (trên nền shadcn/ui) - quy ước ở `docs/code-standards.md` |
 | Backend | Supabase (Auth, Postgres + RLS, Storage) + Next.js Route Handlers / Server Actions |
-| Phạm vi | Toàn bộ tính năng mục 3 research: flashcard, AI tạo thẻ, SRS, speaking + phát âm, các chế độ học, lộ trình, extension, lớp học |
+| Phạm vi | Flashcard, AI tạo thẻ, SRS, speaking + phát âm, chế độ học, khoá học, extension, lớp học |
 
 ## Quyết định kỹ thuật
 
@@ -28,7 +28,7 @@
 | Từ điển | Free Dictionary API + LLM bổ sung nghĩa Việt, cache vĩnh viễn | Chi phí ~0 |
 | Deploy | Vercel + Supabase Cloud | Ít vận hành |
 | Kiểm soát chi phí AI | Bảng `ai_usage` + quota/ngày/user, enforce ở server. Quota tác vụ giọng nói giúp giới hạn tải VPS và lượt gọi dịch vụ. | User: DeepSeek rẻ, chưa cần tính ngân sách |
-| Nội dung lộ trình | **Cấu trúc giống OpenQuiz** (IELTS theo 20 chủ đề, TOEIC, THPT lớp 10–12, For Work, CEFR A1–C2, Collocation, Linking words, Word form…); **nội dung tự sinh** bằng DeepSeek + duyệt | Không sao chép danh sách từ/nội dung của OpenQuiz hay sách có bản quyền |
+| Nội dung khoá học | IELTS 7 cấp, 6 phần và 30 bài mỗi cấp; tên bài và câu hỏi tự soạn, từ do DeepSeek sinh và cần duyệt | Không dùng nội dung hoặc danh sách từ OpenQuiz |
 
 ## Phases
 
@@ -43,7 +43,7 @@ Xem dòng Status ở đầu trang và checklist trong từng phase.
 | 5 | AI tạo thẻ (từ, văn bản, chủ đề, ảnh) | 2 | 1 tuần | [phase-05](phase-05-ai-flashcard-generator.md) |
 | 6 | AI Speaking + chấm phát âm | 2, 5 | 1.5 tuần | [phase-06](phase-06-ai-speaking-pronunciation.md) |
 | 7 | AI Grammar, Reading, AI Call | 6 | 1.5 tuần | [phase-07](phase-07-ai-grammar-reading-call.md) |
-| 8 | Lộ trình học (có sẵn + AI cá nhân hóa) | 2, 5 | 1 tuần | [phase-08](phase-08-learning-paths.md) |
+| 8 | Khoá học IELTS (4 bước, tiến độ và sổ từ) | 2, 5, 6, 7 | 1 tuần | [phase-08](phase-08-learning-paths.md) |
 | 9 | Lớp học (**hoãn**) | 3, 4, 8 | 1.5 tuần | [phase-09](phase-09-classroom.md) |
 | 10 | Chrome Extension | 2 | 1.5 tuần | [phase-10](phase-10-chrome-extension.md) |
 | 11 | Landing/SEO, hardening, deploy | tất cả | 1 tuần | [phase-11](phase-11-launch-hardening.md) |
@@ -75,7 +75,7 @@ Xem dòng Status ở đầu trang và checklist trong từng phase.
 2. Ngân sách: chưa tính; dùng DeepSeek flash, quota LLM rộng.
 3. Nhân lực: **1 dev** → làm tuần tự theo thứ tự phase, ~15 tuần.
 4. Không có người dùng dưới 16 tuổi → consent mic chuẩn, không cần đồng ý phụ huynh.
-5. Nội dung: cấu trúc lộ trình giống OpenQuiz, nội dung tự sinh (xem Quyết định kỹ thuật).
+5. Nội dung: quyết định 27/11 thay lộ trình bằng Khoá học IELTS; xem Quyết định kỹ thuật.
 
 ## Câu hỏi mở
 

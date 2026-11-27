@@ -11,9 +11,10 @@ export const CALL_SCENARIOS = [
   { id: "airport", label: "Ở sân bay", role: "an airport staff member helping a passenger" },
 ] as const;
 
-export type CallScenarioId = (typeof CALL_SCENARIOS)[number]["id"];
+export const COURSE_CALL_TURNS = 5;
 
-export const callScenarioSchema = z.enum(CALL_SCENARIOS.map((s) => s.id) as [CallScenarioId, ...CallScenarioId[]]);
+export type CallScenarioId = (typeof CALL_SCENARIOS)[number]["id"] | "course";
+export const callScenarioSchema = z.custom<CallScenarioId>((id) => id === "course" || CALL_SCENARIOS.some((option) => option.id === id));
 
 /** Hard cap on user turns per call; the DB RPC enforces the same limit. */
 export const MAX_CALL_TURNS = 15;

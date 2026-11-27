@@ -10,6 +10,7 @@ import {
   type CallScenarioId,
   type CallTargetTerm,
 } from "@/lib/ai/conversation";
+import { COURSE_CALL_TURNS } from "@/lib/ai/conversation-types";
 import { assertQuota, QuotaExceededError, recordUsage } from "@/lib/ai/quota";
 import { cefrSchema } from "@/lib/ai/speaking-feedback";
 import { transcribeGroq } from "@/lib/speech/transcribe";
@@ -48,6 +49,7 @@ interface CallContext {
   level: string;
   terms: CallTargetTerm[];
   history: CallMessage[];
+  topic?: string;
 }
 
 async function loadThread(supabase: SupabaseClient, threadId: string, signal: AbortSignal) {
@@ -75,7 +77,13 @@ async function loadContext(supabase: SupabaseClient, thread: ThreadRow, userId: 
     role: m.role === "user" ? "user" : "assistant",
     content: m.content,
   }));
-  return { scenario: scenario.data, level, terms, history };
+  let topic: string | undefined;
+  if (scenario.data === "course") {
+    const lesson = await supabase.from("course_lessons").select("warmup_question").eq("set_id", thread.set_id).abortSignal(signal).single();
+    if (lesson.error) throw lesson.error;
+    topic = lesson.data.warmup_question;
+  }
+  return { scenario: scenario.data, level, terms, history, topic };
 }
 
 /**
@@ -126,7 +134,7 @@ async function handleTurn(request: Request, signal: AbortSignal, context: { para
     }
     await assertQuota(supabase, user.id, "conversation");
     signal.throwIfAborted();
-    const greeting = await generateCallGreeting({ scenario: ctx.scenario, level: ctx.level, terms: ctx.terms, signal });
+    const greeting = await generateCallGreeting({ ...ctx, signal });
     signal.throwIfAborted();
     const { data: saved, error } = await supabase.rpc("start_ai_call", {
       p_thread_id: thread.id,
@@ -138,7 +146,8 @@ async function handleTurn(request: Request, signal: AbortSignal, context: { para
     return Response.json({ greeting });
   }
 
-  if (userTurns >= MAX_CALL_TURNS) {
+  const maxTurns = ctx.scenario === "course" ? COURSE_CALL_TURNS : MAX_CALL_TURNS;
+  if (userTurns >= maxTurns) {
     return Response.json({ error: "Cuộc gọi đã đạt số lượt tối đa. Hãy kết thúc và xem tổng kết." }, { status: 409 });
   }
   if (input.expectedTurns !== userTurns) {
@@ -154,11 +163,12 @@ async function handleTurn(request: Request, signal: AbortSignal, context: { para
   }
   signal.throwIfAborted();
 
-  const remainingTurns = MAX_CALL_TURNS - userTurns - 1;
+  const remainingTurns = maxTurns - userTurns - 1;
   const result = streamCallReply({
     scenario: ctx.scenario,
     level: ctx.level,
     terms: ctx.terms,
+    topic: ctx.topic,
     messages: [...ctx.history, { role: "user", content: userText }],
     remainingTurns,
     signal,

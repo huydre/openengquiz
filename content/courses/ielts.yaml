@@ -1,0 +1,991 @@
+slug: ielts
+goal: ielts
+title: IELTS
+levels:
+  - slug: foundations
+    title: Lấy gốc
+    cefr: A1
+    words: 8
+    summary: Trả lời ngắn về người, nơi chốn và thói quen quen thuộc.
+    entry: Chưa cần kiến thức IELTS; nhận biết bảng chữ cái và đọc từ đơn.
+    outcome: Trả lời hai đến ba câu đơn có chủ ngữ, động từ và chi tiết cụ thể.
+    method: Ghép cụm dễ nhớ với câu ngắn, nghe mẫu và thu âm lại.
+    parts:
+      - title: Một ngày của mình
+        lessons:
+          - title: "After waking"
+            icon: sun
+            question: "What do you do right after you wake up?"
+            scope: "morning actions and time markers"
+          - title: "A short break"
+            icon: sun
+            question: "When do you take a break in your day?"
+            scope: "rest activities and frequency"
+          - title: "Leaving home"
+            icon: sun
+            question: "What do you carry when you leave home?"
+            scope: "portable essentials and carrying verbs"
+          - title: "Lunch company"
+            icon: sun
+            question: "Who do you see at lunchtime?"
+            scope: "people at lunch and meeting places"
+          - title: "Bedtime"
+            icon: sun
+            question: "What helps you get ready for bed?"
+            scope: "evening tasks and sequencing"
+      - title: Những người quanh mình
+        lessons:
+          - title: "Someone funny"
+            icon: users
+            question: "Who makes you laugh at home?"
+            scope: "family members and reactions"
+          - title: "After class"
+            icon: users
+            question: "Which friend do you talk to after class?"
+            scope: "friendship and chatting"
+          - title: "Next door"
+            icon: users
+            question: "What do you do with your neighbors?"
+            scope: "neighbors and shared activities"
+          - title: "Helping out"
+            icon: users
+            question: "Who helps you when you are busy?"
+            scope: "simple chores and offers of help"
+          - title: "A new classmate"
+            icon: users
+            question: "How do you greet a new classmate?"
+            scope: "greetings and introductions"
+      - title: Đồ dùng và nhà ở
+        lessons:
+          - title: "Keeping keys"
+            icon: home
+            question: "Where do you keep your keys?"
+            scope: "storage places and prepositions"
+          - title: "Window view"
+            icon: home
+            question: "What can you see from your window?"
+            scope: "nearby objects and position"
+          - title: "A favorite seat"
+            icon: home
+            question: "Which seat do you use at home?"
+            scope: "furniture and comfort"
+          - title: "Inside my bag"
+            icon: home
+            question: "What is in your school bag?"
+            scope: "school items and containers"
+          - title: "A tidy room"
+            icon: home
+            question: "How do you make your room tidy?"
+            scope: "cleaning actions and arrangement"
+      - title: Món ăn và mua sắm
+        lessons:
+          - title: "Breakfast drinks"
+            icon: cup
+            question: "What do you like to drink with breakfast?"
+            scope: "beverages and taste"
+          - title: "Buying fruit"
+            icon: cup
+            question: "Which fruit do you buy most often?"
+            scope: "fruit varieties and quantities"
+          - title: "A quick lunch"
+            icon: cup
+            question: "What do you put in a quick lunch?"
+            scope: "ingredients and preparation"
+          - title: "A smaller size"
+            icon: cup
+            question: "How do you ask for a smaller size?"
+            scope: "size words and polite requests"
+          - title: "Sunday shopping"
+            icon: cup
+            question: "Which shop do you visit on Sunday?"
+            scope: "shop types and opening times"
+      - title: Đi lại trong khu phố
+        lessons:
+          - title: "To the market"
+            icon: map
+            question: "How do you get to the nearest market?"
+            scope: "transport and everyday directions"
+          - title: "Waiting for the bus"
+            icon: map
+            question: "Where do you wait for a bus?"
+            scope: "stops and waiting phrases"
+          - title: "On the way to school"
+            icon: map
+            question: "What do you see on your way to school?"
+            scope: "street landmarks and motion"
+          - title: "An easy landmark"
+            icon: map
+            question: "Which place is easy to find near your home?"
+            scope: "places and location markers"
+          - title: "Where to turn"
+            icon: map
+            question: "How do you tell someone where to turn?"
+            scope: "turning and street directions"
+      - title: Thời gian rảnh
+        lessons:
+          - title: "Rainy afternoon"
+            icon: spark
+            question: "What do you play on a rainy afternoon?"
+            scope: "indoor games and weather"
+          - title: "My free day"
+            icon: spark
+            question: "Which day gives you the most free time?"
+            scope: "days and time expressions"
+          - title: "A short walk"
+            icon: spark
+            question: "Where do you go for a short walk?"
+            scope: "walking routes and outdoor places"
+          - title: "Listening to relax"
+            icon: spark
+            question: "What do you listen to when you relax?"
+            scope: "audio and feelings"
+          - title: "Inviting a friend"
+            icon: spark
+            question: "Who would you invite to play a game?"
+            scope: "invitations and game actions"
+  - slug: band-3-4
+    title: Band 3 đến 4
+    cefr: A2
+    words: 8
+    summary: Nối câu thành câu trả lời ngắn có lý do.
+    entry: Có thể nói câu đơn về sinh hoạt và hỏi đáp thông tin cơ bản.
+    outcome: Duy trì câu trả lời ngắn, kể việc đã làm và nêu lựa chọn đơn giản.
+    method: Tập trả lời theo mẫu ý chính, lý do và ví dụ thật.
+    parts:
+      - title: Thói quen có lý do
+        lessons:
+          - title: "Best study time"
+            icon: sun
+            question: "Why do you choose one time of day to study?"
+            scope: "energy and time preferences"
+          - title: "A changed morning"
+            icon: sun
+            question: "How has your morning routine changed this year?"
+            scope: "routine changes and time contrast"
+          - title: "An easier weekday"
+            icon: sun
+            question: "What makes a weekday easier for you?"
+            scope: "planning and helpful actions"
+          - title: "A borrowed habit"
+            icon: sun
+            question: "Which habit did you learn from someone else?"
+            scope: "learning by example and frequency"
+          - title: "Remembering tasks"
+            icon: sun
+            question: "How do you remember small tasks?"
+            scope: "reminders and simple tools"
+      - title: Lịch hẹn và kế hoạch
+        lessons:
+          - title: "Meeting friends"
+            icon: map
+            question: "How do you arrange a meeting with friends?"
+            scope: "proposals and arrangements"
+          - title: "Arriving early"
+            icon: map
+            question: "What do you do when you arrive too early?"
+            scope: "waiting and spare time"
+          - title: "Running late"
+            icon: map
+            question: "How do you tell people that you will be late?"
+            scope: "delays and apologies"
+          - title: "Changing plans"
+            icon: map
+            question: "What plan did you change last weekend?"
+            scope: "cancellations and alternatives"
+          - title: "A free morning"
+            icon: map
+            question: "Which activity would you schedule for a free morning?"
+            scope: "scheduling and priorities"
+      - title: Chỗ ở và dịch vụ
+        lessons:
+          - title: "Choosing a room"
+            icon: home
+            question: "What do you check before choosing a room?"
+            scope: "facilities and room features"
+          - title: "Asking for quiet"
+            icon: home
+            question: "How would you ask for a quieter room?"
+            scope: "noise and polite requests"
+          - title: "A useful stay"
+            icon: home
+            question: "What was useful in a place where you stayed?"
+            scope: "lodging amenities and descriptions"
+          - title: "Help for a visitor"
+            icon: home
+            question: "Where would you send a visitor for help?"
+            scope: "public services and referrals"
+          - title: "A broken light"
+            icon: home
+            question: "How do you report a broken light politely?"
+            scope: "reporting faults and repairs"
+      - title: Lựa chọn mỗi ngày
+        lessons:
+          - title: "Ordering in a cafe"
+            icon: cup
+            question: "How do you decide what to order in a cafe?"
+            scope: "menus and preferences"
+          - title: "A shop worth returning to"
+            icon: cup
+            question: "What makes you return to a small shop?"
+            scope: "service and customer habits"
+          - title: "Snacks for a trip"
+            icon: cup
+            question: "Which snack would you bring on a long trip?"
+            scope: "durability and portions"
+          - title: "Buying shoes"
+            icon: cup
+            question: "How did you choose your last pair of shoes?"
+            scope: "fit and comparisons"
+          - title: "Asking an assistant"
+            icon: cup
+            question: "When do you ask a shop assistant for advice?"
+            scope: "recommendations and purchase criteria"
+      - title: Việc học ở lớp
+        lessons:
+          - title: "Before a hard class"
+            icon: book
+            question: "What do you do before a difficult class?"
+            scope: "preparation and study materials"
+          - title: "Repeat that please"
+            icon: book
+            question: "How do you ask someone to repeat an instruction?"
+            scope: "instructions and clarification"
+          - title: "Last week’s task"
+            icon: book
+            question: "What was your favorite task last week?"
+            scope: "classroom activities and past actions"
+          - title: "Remembering in class"
+            icon: book
+            question: "Which class activity helps you remember more?"
+            scope: "practice and recall"
+          - title: "A short presentation"
+            icon: book
+            question: "How do you prepare for a short presentation?"
+            scope: "rehearsal and speaking aids"
+      - title: Trải nghiệm gần đây
+        lessons:
+          - title: "An outing surprise"
+            icon: spark
+            question: "What surprised you on a recent outing?"
+            scope: "reactions and unexpected events"
+          - title: "Company on a walk"
+            icon: spark
+            question: "Who joined you on a memorable walk?"
+            scope: "companions and shared memories"
+          - title: "Caught in the rain"
+            icon: spark
+            question: "What did you do when it started to rain?"
+            scope: "weather and quick decisions"
+          - title: "A photo to share"
+            icon: spark
+            question: "Which picture from last month would you show a friend?"
+            scope: "images and description"
+          - title: "An unexpected day off"
+            icon: spark
+            question: "How did you spend an unexpected day off?"
+            scope: "leisure and changes in schedule"
+  - slug: band-45-55
+    title: Band 4.5 đến 5.5
+    cefr: B1
+    words: 10
+    summary: Phát triển ý bằng chi tiết, ví dụ và trình tự rõ.
+    entry: Nói được vài câu nối nhau về chủ đề quen thuộc.
+    outcome: Kể một trải nghiệm mạch lạc và trả lời câu hỏi tiếp nối.
+    method: Chuẩn bị ba ý, kể theo mốc thời gian và sửa lỗi lặp lại.
+    parts:
+      - title: Kể lại một việc đáng nhớ
+        lessons:
+          - title: "A hard-won achievement"
+            icon: spark
+            question: "What small achievement took more effort than you expected?"
+            scope: "effort and milestones"
+          - title: "A delay that helped"
+            icon: spark
+            question: "When did a delayed journey turn out well?"
+            scope: "travel disruptions and outcomes"
+          - title: "Cooking for a group"
+            icon: spark
+            question: "What happened the first time you cooked for other people?"
+            scope: "preparation and serving"
+          - title: "An unexpected invitation"
+            icon: spark
+            question: "How did you react to an unexpected invitation?"
+            scope: "spontaneous decisions and reactions"
+          - title: "A day worth reliving"
+            icon: spark
+            question: "Which ordinary day would you like to relive?"
+            scope: "recollection and sensory details"
+      - title: Người ảnh hưởng đến mình
+        lessons:
+          - title: "Discovering a subject"
+            icon: users
+            question: "Who helped you enjoy a subject you once disliked?"
+            scope: "motivation and teaching"
+          - title: "Trying a hobby"
+            icon: users
+            question: "When did a friend change your mind about a hobby?"
+            scope: "persuasion and changed opinions"
+          - title: "Learning independence"
+            icon: users
+            question: "What did a relative teach you to do independently?"
+            scope: "practical guidance and autonomy"
+          - title: "A good teammate"
+            icon: users
+            question: "Which quality makes a teammate easy to work with?"
+            scope: "cooperation and reliability"
+          - title: "After a mistake"
+            icon: users
+            question: "How did someone encourage you after a mistake?"
+            scope: "encouragement and recovery"
+      - title: Học và làm bằng công cụ số
+        lessons:
+          - title: "A helpful digital tool"
+            icon: book
+            question: "What digital tool made a task simpler for you?"
+            scope: "features and efficiency"
+          - title: "Useful chat messages"
+            icon: book
+            question: "How do you save useful information from a busy chat?"
+            scope: "saving and retrieval"
+          - title: "Confusing instructions"
+            icon: book
+            question: "Which online instruction was hard to follow?"
+            scope: "steps and ambiguity"
+          - title: "A fast video lesson"
+            icon: book
+            question: "What do you do when a video lesson moves too quickly?"
+            scope: "playback and note-taking"
+          - title: "Without my device"
+            icon: book
+            question: "How did you solve a problem without your usual device?"
+            scope: "workarounds and troubleshooting"
+      - title: Chọn nơi để dành thời gian
+        lessons:
+          - title: "Working alone"
+            icon: map
+            question: "Which local place is good for working alone?"
+            scope: "quiet spaces and concentration"
+          - title: "A park worth revisiting"
+            icon: map
+            question: "What would make a park worth visiting again?"
+            scope: "facilities and upkeep"
+          - title: "Library or cafe"
+            icon: map
+            question: "How do you choose between a library and a cafe?"
+            scope: "atmosphere and practical comparisons"
+          - title: "Finding local history"
+            icon: map
+            question: "Where can visitors learn about your town without a guide?"
+            scope: "exhibits and self-guided visits"
+          - title: "A new neighborhood"
+            icon: map
+            question: "What do you notice first in an unfamiliar neighborhood?"
+            scope: "street features and impressions"
+      - title: Thói quen sức khỏe
+        lessons:
+          - title: "Exercise that sticks"
+            icon: sun
+            question: "What makes a short exercise routine easy to maintain?"
+            scope: "routines and motivation"
+          - title: "After a busy week"
+            icon: sun
+            question: "How do you recover after a busy week?"
+            scope: "rest and recovery"
+          - title: "A useful reminder"
+            icon: sun
+            question: "When has a health reminder actually helped you?"
+            scope: "monitoring and habit cues"
+          - title: "Regular meals"
+            icon: sun
+            question: "Which change would make your meals more regular?"
+            scope: "meal planning and schedules"
+          - title: "Active with friends"
+            icon: sun
+            question: "How can friends make an active hobby more enjoyable?"
+            scope: "social motivation and shared exercise"
+      - title: Tiêu dùng có cân nhắc
+        lessons:
+          - title: "Repair or replace"
+            icon: cup
+            question: "When is repairing an item better than replacing it?"
+            scope: "durability and repair costs"
+          - title: "Advice from a friend"
+            icon: cup
+            question: "What makes you trust a recommendation from a friend?"
+            scope: "credibility and firsthand experience"
+          - title: "Keeping a subscription"
+            icon: cup
+            question: "How do you decide whether a subscription is worth keeping?"
+            scope: "recurring fees and usage"
+          - title: "Researching a purchase"
+            icon: cup
+            question: "Which household purchase deserves more research?"
+            scope: "specifications and reviews"
+          - title: "Stress and shopping"
+            icon: cup
+            question: "How can people avoid buying things after a stressful day?"
+            scope: "impulse buying and self-control"
+  - slug: band-6
+    title: Band 6
+    cefr: B2
+    words: 10
+    summary: Nêu quan điểm có đối chiếu và ví dụ đúng trọng tâm.
+    entry: Kể được trải nghiệm và giải thích lý do trên vài chủ đề quen thuộc.
+    outcome: Phát triển luận điểm có so sánh, điều kiện và hệ quả cụ thể.
+    method: Luyện nói lần đầu có giới hạn thời gian rồi nói lại với cụm chính xác.
+    parts:
+      - title: Đi làm và chuyên môn
+        lessons:
+          - title: "Remote teamwork"
+            icon: book
+            question: "When does remote work make teamwork harder?"
+            scope: "coordination and communication gaps"
+          - title: "Early specialization"
+            icon: book
+            question: "Should beginners specialize early in their careers?"
+            scope: "career paths and transferable skills"
+          - title: "Useful feedback"
+            icon: book
+            question: "What makes feedback useful rather than discouraging?"
+            scope: "specificity and coaching"
+          - title: "Sharing unpopular tasks"
+            icon: book
+            question: "How can a team share unpopular tasks fairly?"
+            scope: "rotation and workload"
+          - title: "Beyond the interview"
+            icon: book
+            question: "Which skills are hard to show in a short interview?"
+            scope: "demonstrating skills and assessment"
+      - title: Đô thị thuận tiện hơn
+        lessons:
+          - title: "Short trips without cars"
+            icon: map
+            question: "How can cities make short trips less dependent on cars?"
+            scope: "walkability and transit alternatives"
+          - title: "Beyond the platform"
+            icon: map
+            question: "What should a station offer besides transport?"
+            scope: "station amenities and access"
+          - title: "Pedestrian streets"
+            icon: map
+            question: "When is a pedestrian street a poor fit for an area?"
+            scope: "street design and business access"
+          - title: "Public benches"
+            icon: map
+            question: "How might public benches change the way people use a street?"
+            scope: "seating and street activity"
+          - title: "A city after dark"
+            icon: map
+            question: "Which parts of a city should stay open late?"
+            scope: "opening hours and safety"
+      - title: Tin tức và thói quen số
+        lessons:
+          - title: "Sharing unchecked news"
+            icon: book
+            question: "What makes people pass on news before checking it?"
+            scope: "verification and social pressure"
+          - title: "Distracting notifications"
+            icon: book
+            question: "When does a notification become a distraction?"
+            scope: "attention and interruption"
+          - title: "Conflicting news"
+            icon: book
+            question: "How can someone compare two conflicting news stories?"
+            scope: "source comparison and framing"
+          - title: "Useful online reviews"
+            icon: book
+            question: "Which online review is most useful to a first-time customer?"
+            scope: "specificity and reviewer credibility"
+          - title: "Phone-free time"
+            icon: book
+            question: "How could a family agree on phone-free time?"
+            scope: "household rules and negotiation"
+      - title: Nghệ thuật trong đời sống
+        lessons:
+          - title: "A neighborhood mural"
+            icon: spark
+            question: "Why might a public mural matter to local residents?"
+            scope: "public art and local identity"
+          - title: "A museum without a guide"
+            icon: spark
+            question: "What makes a museum visit memorable without a guide?"
+            scope: "interpretation and exhibition design"
+          - title: "Explaining a performance"
+            icon: spark
+            question: "When should a performance explain its cultural background?"
+            scope: "cultural context and staging"
+          - title: "Finding unfamiliar music"
+            icon: spark
+            question: "How can a new audience discover unfamiliar music?"
+            scope: "curation and discovery"
+          - title: "A small arts venue"
+            icon: spark
+            question: "Should a town invest in a small arts venue?"
+            scope: "arts funding and local participation"
+      - title: Học ngoài lớp
+        lessons:
+          - title: "Organizing an event"
+            icon: users
+            question: "What can students learn by organizing an event?"
+            scope: "delegation and logistics"
+          - title: "Assessing group projects"
+            icon: users
+            question: "When is a group project a poor way to assess learning?"
+            scope: "assessment fairness and contribution"
+          - title: "Learning by volunteering"
+            icon: users
+            question: "How can a volunteer role develop practical skills?"
+            scope: "practical experience and initiative"
+          - title: "Learning by teaching"
+            icon: users
+            question: "Why do some people learn better by teaching others?"
+            scope: "explanation and retention"
+          - title: "Finishing an online course"
+            icon: users
+            question: "What makes an online course worth completing?"
+            scope: "engagement and course design"
+      - title: Thích nghi với thay đổi
+        lessons:
+          - title: "A sudden change of plans"
+            icon: sun
+            question: "How can people handle an unexpected change of plans?"
+            scope: "contingencies and adaptation"
+          - title: "Keeping a routine during a move"
+            icon: sun
+            question: "When is it helpful to keep an old routine during a move?"
+            scope: "continuity and adjustment"
+          - title: "Simple rules for habits"
+            icon: sun
+            question: "Why do simple rules make new habits easier to keep?"
+            scope: "cues and consistency"
+          - title: "Rolling out a new process"
+            icon: sun
+            question: "How can a workplace introduce a new process without confusion?"
+            scope: "implementation and staff guidance"
+          - title: "Talking about uncertainty"
+            icon: sun
+            question: "What makes uncertainty easier to discuss with others?"
+            scope: "open communication and reassurance"
+  - slug: band-7
+    title: Band 7
+    cefr: C1
+    words: 10
+    summary: Lập luận linh hoạt và xử lý câu hỏi phản biện.
+    entry: Diễn giải được hai mặt của vấn đề và đưa ví dụ phù hợp.
+    outcome: Nêu sắc thái, ngoại lệ và điều kiện mà không mất mạch lập luận.
+    method: Luyện phản biện, diễn đạt lại và đối chiếu hai bản nói để sửa lỗi.
+    parts:
+      - title: Năng lượng và chuyển đổi
+        lessons:
+          - title: "Affordable reliable energy"
+            icon: sun
+            question: "How should a town balance cheaper energy with reliable supply?"
+            scope: "price stability and grid reliability"
+          - title: "Subsidies and inequality"
+            icon: sun
+            question: "When might an energy subsidy widen inequality?"
+            scope: "eligibility and distribution"
+          - title: "Justifying a retrofit"
+            icon: sun
+            question: "What makes a home retrofit difficult to justify?"
+            scope: "upfront costs and payback"
+          - title: "Siting renewables"
+            icon: sun
+            question: "How can a community agree on where to place renewable infrastructure?"
+            scope: "consultation and land use"
+          - title: "Who pays for energy savings"
+            icon: sun
+            question: "Which energy-saving policies might unfairly burden tenants?"
+            scope: "tenant obligations and cost shifting"
+      - title: Công nghệ và niềm tin
+        lessons:
+          - title: "Challenging an algorithm"
+            icon: book
+            question: "When should a person be able to contest an automated decision?"
+            scope: "appeals and automated decisions"
+          - title: "Is that data needed"
+            icon: book
+            question: "How can people judge whether a service needs their data?"
+            scope: "purpose limitation and consent"
+          - title: "Convenience as a default"
+            icon: book
+            question: "What happens when convenience becomes the default argument?"
+            scope: "friction and overlooked trade-offs"
+          - title: "Visible hiring decisions"
+            icon: book
+            question: "Which parts of a hiring decision should never be hidden?"
+            scope: "selection criteria and accountability"
+          - title: "Useful transparency"
+            icon: book
+            question: "Can transparency make an online service harder to understand?"
+            scope: "disclosure and cognitive load"
+      - title: Cơ hội học tập
+        lessons:
+          - title: "Entry standards and access"
+            icon: users
+            question: "How could an adult college balance entry standards with wider access?"
+            scope: "admission pathways and barriers"
+          - title: "Experience as credit"
+            icon: users
+            question: "When should practical experience count toward a qualification?"
+            scope: "prior learning and credentials"
+          - title: "Who mentoring misses"
+            icon: users
+            question: "What keeps a mentoring program from helping those most in need?"
+            scope: "outreach and unmet need"
+          - title: "A scholarship’s ripple effect"
+            icon: users
+            question: "How might a scholarship change the choices of an entire family?"
+            scope: "household choices and financial mobility"
+          - title: "Access versus participation"
+            icon: users
+            question: "Why does availability not always lead to equal participation?"
+            scope: "practical barriers and uptake"
+      - title: Du lịch có trách nhiệm
+        lessons:
+          - title: "What visitor fees can do"
+            icon: map
+            question: "What might a visitor fee achieve beyond raising revenue?"
+            scope: "levies and demand management"
+          - title: "Short stays and housing"
+            icon: map
+            question: "How should a city respond when short stays reshape housing?"
+            scope: "rental supply and zoning"
+          - title: "Beyond visitor counts"
+            icon: map
+            question: "When do visitor numbers stop being a useful measure of success?"
+            scope: "tourism impact and alternative metrics"
+          - title: "Spreading visitors"
+            icon: map
+            question: "Can a destination spread visitors without creating new problems?"
+            scope: "seasonality and displacement"
+          - title: "Presenting traditions"
+            icon: map
+            question: "Who should help decide how a local tradition is presented?"
+            scope: "representation and community consent"
+      - title: Sức khỏe cộng đồng
+        lessons:
+          - title: "Personal choice and public health"
+            icon: home
+            question: "When can an individual health choice become a public concern?"
+            scope: "spillover effects and autonomy"
+          - title: "Risk without alarm"
+            icon: home
+            question: "How can campaigns communicate risk without alarming people?"
+            scope: "risk framing and public messaging"
+          - title: "Budgeting for prevention"
+            icon: home
+            question: "What makes prevention difficult to prioritize in a tight budget?"
+            scope: "long-term savings and competing priorities"
+          - title: "Services for shift workers"
+            icon: home
+            question: "Which changes would help shift workers reach basic services?"
+            scope: "service hours and access barriers"
+          - title: "Plain-language uncertainty"
+            icon: home
+            question: "How should officials explain uncertain advice in plain language?"
+            scope: "confidence and provisional advice"
+      - title: Kinh tế và trách nhiệm
+        lessons:
+          - title: "Repair guarantees"
+            icon: cup
+            question: "When might a repair guarantee be more useful than a price discount?"
+            scope: "warranties and product longevity"
+          - title: "Speed versus quality"
+            icon: cup
+            question: "How could a company explain a trade-off between speed and quality?"
+            scope: "service commitments and compromise"
+          - title: "Reading green claims"
+            icon: cup
+            question: "What makes a sustainability claim hard for a customer to assess?"
+            scope: "verification and environmental labels"
+          - title: "After products are discarded"
+            icon: cup
+            question: "Should businesses be responsible for how products are discarded?"
+            scope: "producer responsibility and waste"
+          - title: "Hidden costs of low prices"
+            icon: cup
+            question: "Why might a low-price policy create unexpected costs later?"
+            scope: "externalities and delayed costs"
+  - slug: advanced-1
+    title: Nâng cao 1
+    cefr: C1
+    words: 10
+    summary: Xử lý chủ đề trừu tượng và phân biệt lập luận với bằng chứng.
+    entry: Dùng được lập luận có điều kiện và diễn đạt lại khi thiếu từ.
+    outcome: Phân tích giả định, độ chắc chắn và tác dụng ngoài dự kiến.
+    method: So sánh hai khung lập luận rồi luyện thay đổi giọng theo người nghe.
+    parts:
+      - title: Bằng chứng và bất định
+        lessons:
+          - title: "Anecdotes and policy"
+            icon: book
+            question: "What makes a convincing anecdote a weak basis for policy?"
+            scope: "representativeness and generalization"
+          - title: "Conflicting evidence"
+            icon: book
+            question: "How should a speaker describe evidence that points in different directions?"
+            scope: "mixed findings and caveats"
+          - title: "Behind the percentage"
+            icon: book
+            question: "What can a striking percentage conceal?"
+            scope: "denominators and base rates"
+          - title: "When not to recommend"
+            icon: book
+            question: "When should a researcher avoid making a recommendation?"
+            scope: "evidence thresholds and provisional findings"
+          - title: "Expectations and results"
+            icon: book
+            question: "How do expectations affect the interpretation of a disappointing result?"
+            scope: "interpretive bias and expectations"
+      - title: Thiết kế và hành vi
+        lessons:
+          - title: "Pressure by default"
+            icon: spark
+            question: "When does a helpful default become undue pressure?"
+            scope: "choice architecture and coercion"
+          - title: "A clear opt-out"
+            icon: spark
+            question: "What makes an opt-out clear without making it burdensome?"
+            scope: "disclosure and procedural friction"
+          - title: "Fairness in queues"
+            icon: spark
+            question: "How might the design of a queue change perceptions of fairness?"
+            scope: "perceived fairness and queue design"
+          - title: "Useful difficulty"
+            icon: spark
+            question: "Which difficulties are worth preserving in a learning tool?"
+            scope: "productive struggle and learning retention"
+          - title: "Behavior versus preference"
+            icon: spark
+            question: "Why should designers examine behavior rather than only preferences?"
+            scope: "observed behavior and self-report bias"
+      - title: Điều phối nguồn lực chung
+        lessons:
+          - title: "Sharing outdoor space"
+            icon: home
+            question: "How should residents share responsibility for a common outdoor space?"
+            scope: "stewardship and collective responsibility"
+          - title: "Unequal effects of blanket rules"
+            icon: home
+            question: "When does a blanket rule punish people who have few alternatives?"
+            scope: "exceptions and unequal burdens"
+          - title: "Durable voluntary agreements"
+            icon: home
+            question: "What might make a voluntary agreement more durable?"
+            scope: "reciprocity and compliance incentives"
+          - title: "Disputes over shared facilities"
+            icon: home
+            question: "How can a community settle disagreements about a jointly funded facility?"
+            scope: "mediation and joint funding"
+          - title: "Invisible costs of overuse"
+            icon: home
+            question: "What happens when nobody can see the cost of overusing a shared service?"
+            scope: "commons problems and feedback"
+      - title: Ký ức và di sản
+        lessons:
+          - title: "Missing voices in archives"
+            icon: map
+            question: "Which voices are likely to disappear from a local archive?"
+            scope: "selection bias and oral histories"
+          - title: "Disputed objects"
+            icon: map
+            question: "How should a museum label an object with a disputed history?"
+            scope: "provenance and contested narratives"
+          - title: "Reconstruction or original"
+            icon: map
+            question: "When can a reconstruction be more useful than an original object?"
+            scope: "authenticity and interpretive value"
+          - title: "Ordinary places as monuments"
+            icon: map
+            question: "What might be lost when everyday places are preserved as monuments?"
+            scope: "living heritage and preservation trade-offs"
+          - title: "Where memorials stand"
+            icon: map
+            question: "How does the setting of a memorial change its meaning?"
+            scope: "site meaning and public memory"
+      - title: Quan hệ và ranh giới
+        lessons:
+          - title: "Disagreement without suspicion"
+            icon: users
+            question: "How can a person disagree without questioning someone else's motives?"
+            scope: "attribution and charitable interpretation"
+          - title: "Apology versus remedy"
+            icon: users
+            question: "When is a direct apology less helpful than a practical remedy?"
+            scope: "acknowledgment and restitution"
+          - title: "When help feels controlling"
+            icon: users
+            question: "What makes help feel controlling rather than supportive?"
+            scope: "agency and unsolicited support"
+          - title: "Honesty and fairness"
+            icon: users
+            question: "Why might an honest account still seem unfair to the listener?"
+            scope: "selective framing and perspective"
+          - title: "Open criticism and trust"
+            icon: users
+            question: "How can a team maintain trust while sharing criticism openly?"
+            scope: "psychological safety and accountability"
+      - title: Tương lai công việc
+        lessons:
+          - title: "Shorter working weeks"
+            icon: sun
+            question: "How might shorter working weeks affect workers with little schedule control?"
+            scope: "schedule autonomy and flexibility"
+          - title: "Distorted measures of output"
+            icon: sun
+            question: "When does measuring output distort the quality of work?"
+            scope: "performance metrics and quality"
+          - title: "Reskilling with caring duties"
+            icon: sun
+            question: "What could make reskilling programs accessible to people with caring duties?"
+            scope: "care obligations and accessible training"
+          - title: "Skills worth retaining"
+            icon: sun
+            question: "Should a workplace preserve skills that new tools make less common?"
+            scope: "skill erosion and institutional memory"
+          - title: "Sharing productivity gains"
+            icon: sun
+            question: "How can employers share gains from improved productivity?"
+            scope: "profit-sharing and distribution"
+  - slug: advanced-2
+    title: Nâng cao 2
+    cefr: C2
+    words: 10
+    summary: Nói tự nhiên, chính xác và có chiều sâu khi quan điểm xung đột.
+    entry: Phân biệt được giả định với bằng chứng và giữ mạch nói khi phản biện.
+    outcome: Điều chỉnh sắc thái, độ chắc chắn và cách trình bày trong câu hỏi khó.
+    method: Luyện đối thoại có phản ví dụ, nói lại ngắn gọn rồi tự đánh giá lựa chọn từ.
+    parts:
+      - title: Lập luận đạo đức
+        lessons:
+          - title: "Small benefits and severe harm"
+            icon: users
+            question: "How should a decision maker weigh a widespread small benefit against a severe local harm?"
+            scope: "aggregation and concentrated burdens"
+          - title: "Consistent treatment and injustice"
+            icon: users
+            question: "When can consistent treatment sustain an unjust outcome?"
+            scope: "formal equality and structural inequity"
+          - title: "Compensation without acknowledgment"
+            icon: users
+            question: "Is it possible to compensate people without acknowledging a wrong?"
+            scope: "redress and recognition"
+          - title: "Discomfort versus objection"
+            icon: users
+            question: "How can a speaker distinguish moral discomfort from a strong objection?"
+            scope: "moral intuition and principled dissent"
+          - title: "Compromise without full consent"
+            icon: users
+            question: "What makes a compromise legitimate when consent is incomplete?"
+            scope: "legitimacy and procedural safeguards"
+      - title: Truyền thông công chúng
+        lessons:
+          - title: "Uncertainty without false balance"
+            icon: book
+            question: "How can a speaker clarify uncertainty without implying that all views are equally supported?"
+            scope: "evidential weight and calibrated certainty"
+          - title: "A vivid but misleading example"
+            icon: book
+            question: "When does a vivid illustration mislead even if its facts are correct?"
+            scope: "salience and misleading implication"
+          - title: "Persuasive concessions"
+            icon: book
+            question: "Which kinds of concession make an argument more persuasive?"
+            scope: "qualified agreement and credibility"
+          - title: "Answering a loaded question"
+            icon: book
+            question: "How should an expert respond when a question contains a misleading premise?"
+            scope: "presupposition and reframing"
+          - title: "Nuance in a slogan"
+            icon: book
+            question: "Can a slogan retain a useful distinction while remaining memorable?"
+            scope: "compression and rhetorical distinction"
+      - title: Luật lệ và hợp tác
+        lessons:
+          - title: "Trust after a serious mistake"
+            icon: home
+            question: "What makes an institution worth trusting after it admits a serious mistake?"
+            scope: "institutional accountability and repair"
+          - title: "Acting early under uncertainty"
+            icon: home
+            question: "How can a regulator act early without assuming too much certainty?"
+            scope: "precaution and evidential thresholds"
+          - title: "Exemptions that undermine rules"
+            icon: home
+            question: "When does a temporary exemption undermine a rule?"
+            scope: "precedent and regulatory erosion"
+          - title: "A standard nobody can audit"
+            icon: home
+            question: "What happens when a standard is precise but impossible to audit?"
+            scope: "enforceability and verification"
+          - title: "Minimum protections across borders"
+            icon: home
+            question: "How should competing jurisdictions agree on a minimum protection?"
+            scope: "harmonization and jurisdictional competition"
+      - title: Tài nguyên và thế hệ sau
+        lessons:
+          - title: "Valuing benefits for future residents"
+            icon: sun
+            question: "How can present needs be balanced against benefits that future residents may value differently?"
+            scope: "intergenerational valuation and discounting"
+          - title: "Keeping future options open"
+            icon: sun
+            question: "When is preserving the ability to make a later choice worth a current cost?"
+            scope: "option value and irreversible commitments"
+          - title: "Different plans from the same evidence"
+            icon: sun
+            question: "Why might two conservation plans disagree despite using the same evidence?"
+            scope: "conservation priorities and normative assumptions"
+          - title: "Irrecoverable ecosystem loss"
+            icon: sun
+            question: "What should count as loss when an ecosystem cannot be fully restored?"
+            scope: "ecological baselines and non-substitutability"
+          - title: "Resilience or spare capacity"
+            icon: sun
+            question: "How can planners distinguish resilience from simply building excess capacity?"
+            scope: "redundancy and adaptive capacity"
+      - title: Văn hóa và diễn giải
+        lessons:
+          - title: "Translating humor"
+            icon: spark
+            question: "When can translating a joke preserve its effect while changing its meaning?"
+            scope: "pragmatic equivalence and wordplay"
+          - title: "What adaptations reveal"
+            icon: spark
+            question: "What might adaptation reveal about assumptions in the original work?"
+            scope: "implicit assumptions and reinterpretation"
+          - title: "Ambiguity across audiences"
+            icon: spark
+            question: "How does ambiguity help a story travel between audiences?"
+            scope: "polysemy and reception"
+          - title: "An author’s explanation"
+            icon: spark
+            question: "Why might an author's explanation be informative without settling interpretation?"
+            scope: "authorial intent and interpretive authority"
+          - title: "Disagreement in exhibitions"
+            icon: spark
+            question: "Can a public exhibition encourage disagreement without turning it into spectacle?"
+            scope: "curatorial framing and public deliberation"
+      - title: Xử lý hệ quả ngoài dự kiến
+        lessons:
+          - title: "How people adapt around rules"
+            icon: map
+            question: "How can policymakers notice when people adapt around a well-meaning rule?"
+            scope: "behavioral responses and displacement"
+          - title: "Beyond the pilot study"
+            icon: map
+            question: "What makes a pilot study hard to extend to a whole country?"
+            scope: "external validity and scaling constraints"
+          - title: "Reversal or more exceptions"
+            icon: map
+            question: "When should officials reverse a decision rather than add exceptions?"
+            scope: "policy feedback and course correction"
+          - title: "Reforms that move burdens"
+            icon: map
+            question: "How might a reform shift a problem to a group that was not consulted?"
+            scope: "spillover and excluded stakeholders"
+          - title: "Reversibility in practice"
+            icon: map
+            question: "What makes a decision reversible in practice rather than only on paper?"
+            scope: "lock-in and exit costs"

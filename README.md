@@ -83,8 +83,8 @@ pnpm lint && pnpm typecheck && pnpm test
 | `/speaking/history` | Xem các lượt luyện gần đây. Không lưu bản ghi. |
 | `/study/[setId]/grammar`, `/study/[setId]/reading`, `/study/[setId]/call` | Luyện dịch và sửa câu, đọc hiểu với từ trong bộ, hội thoại theo kịch bản bằng giọng nói hoặc gõ chữ. |
 | `/history` | Xem câu sai, đoạn đọc và hội thoại đã lưu. Không lưu bản ghi. |
-| `/paths`, `/paths/[id]` | Khám phá lộ trình, xem tiến độ, học bộ kế tiếp hoặc ôn cả lộ trình qua `/review`. |
-| `/paths/new`, `/paths/ai` | Tự xếp bộ từ hoặc để AI tạo lộ trình riêng theo mục tiêu, thời gian học và CEFR. |
+| `/courses`, `/courses/[course]` | Chọn khoá IELTS, cấp độ, xem bản đồ, mục tiêu và sổ từ. |
+| `/courses/[course]/lessons/[lessonId]` | Nói trước, học từ, nói lại và hội thoại; hoàn thành để mở bài kế tiếp. |
 | `/lookup` | Tra từ tiếng Anh rồi lưu kết quả vào bộ từ của mình. |
 | `/api/lookup?term=word` | API yêu cầu đăng nhập, chuẩn hoá từ, đọc cache có sẵn rồi tra Free Dictionary API khi cần. |
 | `/api/ai/generate-cards` | API tạo thẻ bằng AI (yêu cầu đăng nhập và quota). |
@@ -105,17 +105,21 @@ supabase db push --db-url "postgresql://postgres.$SUPABASE_PROJECT_REF:$SUPABASE
 
 Mọi bảng bật RLS. `word_cache` chỉ server ghi (bằng secret key); `ai_usage` người dùng chỉ đọc/thêm của mình, không sửa/xoá được (để quota không bị reset).
 
-### Tạo lộ trình hệ thống
+### Xuất bản khoá IELTS
 
-Sau khi áp migration, cài Bun và chuẩn bị tài khoản hệ thống đã có profile. Đặt `SEED_PATHS_OWNER_ID` là UUID profile đó. Cung cấp `DEEPSEEK_API_KEY`, `AI_MODEL`, `NEXT_PUBLIC_SUPABASE_URL` và `SUPABASE_SECRET_KEY` qua môi trường chạy hoặc `.env.local`.
+Áp `supabase/migrations/20261127160000_courses.sql` trước khi bật Khoá học. Migration xoá metadata và liên kết lộ trình cũ, không xoá `study_sets` hay `cards`. Khi thiếu schema, trang chủ vẫn dùng được nhưng không tải phần Học tiếp.
+
+Cài Bun, chuẩn bị tài khoản hệ thống đã có profile. Đặt `SEED_CONTENT_OWNER_ID` là UUID của profile; cấu hình `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `DEEPSEEK_API_KEY` và `AI_MODEL` trong môi trường chạy hoặc `.env.local`.
 
 ```bash
-pnpm seed:paths
+pnpm seed:courses --level foundations
+# Hoặc xuất bản các cấp còn thiếu:
+pnpm seed:courses
 ```
 
-Lệnh đọc `content/paths.yaml`, bỏ qua slug đã có và lưu mỗi lộ trình cùng bộ từ ở trạng thái riêng tư. Duyệt CEFR, IPA, nghĩa và ví dụ trước khi công khai các bộ từ, rồi công khai lộ trình.
+Seed đọc [`content/courses/ielts.yaml`](content/courses/ielts.yaml), sinh từ theo bài, khử trùng toàn khoá và chạy pipeline bổ sung IPA, nghĩa Việt, ví dụ và đồng nghĩa. Dùng DB thử để duyệt chất lượng trước khi chạy trên môi trường thật: từng cấp và bộ từ của cấp được xuất bản công khai ngay khi lưu thành công. Chạy lại bỏ qua cấp đã có; chạy tuần tự để tránh hai phiên sinh cùng từ.
 
-Trong trang chi tiết, **Học tiếp** mở bộ đầu tiên còn từ chưa thuộc. Hoàn thành Learn hoặc thêm bộ vào ôn tập để đưa thẻ vào SRS; **Ôn cả lộ trình** chỉ lấy thẻ đã vào SRS từ các bộ thuộc lộ trình, vẫn áp dụng giới hạn thẻ mới theo ngày.
+**Học tiếp** mở bài đầu chưa xong của cấp đang học; nếu chưa chọn cấp, mục tiêu IELTS và CEFR từ onboarding dùng để gợi ý. **Sổ từ vựng** đọc các thẻ khoá học đã vào SRS và điểm phát âm gần nhất nếu có.
 
 ## Cấu trúc
 

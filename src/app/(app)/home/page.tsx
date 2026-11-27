@@ -4,8 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { currentStreak } from "@/lib/srs/activity";
 import { LogoLoader } from "@/components/layout/logo-loader";
-import { PathList } from "@/components/paths/path-list";
-import { recommendPaths, type PathCard } from "@/lib/paths/path-data";
+import { courseMap, getCourse } from "@/lib/courses/course-data";
 
 export const metadata = { title: "Trang chủ" };
 
@@ -34,7 +33,7 @@ async function HomeContent() {
     redirect("/onboarding");
   }
 
-  const [{ count: due }, { data: activity }, { data: paths }] = await Promise.all([
+  const [{ count: due }, { data: activity }] = await Promise.all([
     supabase.from("review_states")
       .select("card_id", { count: "exact", head: true })
       .eq("user_id", user.id)
@@ -44,14 +43,11 @@ async function HomeContent() {
       .eq("user_id", user.id)
       .order("day", { ascending: false })
       .limit(1000),
-    supabase.from("learning_paths").select("id,title,description,tags,level")
-      .eq("visibility", "public").eq("status", "ready").order("created_at", { ascending: false }),
   ]);
   const streak = currentStreak(
     (activity ?? []).filter((day) => day.reviews + day.studied > 0).map((day) => day.day),
     new Date(),
   );
-  const suggested = recommendPaths((paths ?? []) as PathCard[], profile?.goal, profile?.level);
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-5">
@@ -74,11 +70,32 @@ async function HomeContent() {
         <Link href="/sets" className="rounded-2xl border-2 px-5 py-3 font-extrabold uppercase">Xem bộ từ</Link>
         <Link href="/stats" className="rounded-2xl border-2 px-5 py-3 font-extrabold uppercase">Xem thống kê</Link>
       </div>
-      <section className="space-y-3">
-        <h2 className="text-xl font-extrabold">Lộ trình gợi ý</h2>
-        {suggested.length > 0 && <PathList paths={suggested} />}
-        <Link href="/paths" className="text-primary font-bold underline">Khám phá lộ trình</Link>
-      </section>
+      <Suspense fallback={<LogoLoader size="sm" label="Đang tải khoá học" />}>
+        <ContinueCourse db={supabase} goal={profile?.goal} level={profile?.level} />
+      </Suspense>
     </div>
   );
+}
+
+async function ContinueCourse({ db, goal, level }: { db: Awaited<ReturnType<typeof createClient>>; goal?: string | null; level?: string | null }) {
+  let slug: string | null = null;
+  let selected: Awaited<ReturnType<typeof getCourse>> = null;
+  let next: string | undefined;
+  try {
+    const { data: choice, error } = await db.from("course_choices").select("course_id").order("updated_at", { ascending: false }).limit(1).maybeSingle();
+    if (error) throw error;
+    const active = choice ? await db.from("courses").select("slug").eq("id", choice.course_id).single() : null;
+    if (active?.error) throw active.error;
+    slug = active?.data?.slug ?? (goal === "ielts" ? "ielts" : null);
+    selected = slug ? await getCourse(db, slug, level) : null;
+    next = selected?.level ? (await courseMap(db, selected.level.id)).next : undefined;
+  } catch (error) {
+    console.error("Course continuation unavailable", error);
+    return <p role="status" className="text-muted-foreground">Chưa tải được khoá học. Bạn vẫn có thể học bộ từ và ôn tập.</p>;
+  }
+  return <section className="space-y-3">
+    <h2 className="text-xl font-extrabold">{next ? "Học tiếp" : "Khoá học"}</h2>
+    {selected?.level && <p>{selected.course.title} · {selected.level.title}</p>}
+    <Link href={next ? `/courses/${slug}/lessons/${next}` : "/courses"} className="font-bold text-primary underline">{next ? "Mở bài học" : "Khám phá khoá học"}</Link>
+  </section>;
 }

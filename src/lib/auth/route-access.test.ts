@@ -15,7 +15,7 @@ describe("routeRedirect", () => {
 
   it("protects app pages by default, including ones not listed anywhere", () => {
     expect(routeRedirect("/home", "", false)).toBe("/login?next=%2Fhome");
-    expect(routeRedirect("/paths/123", "", false)).toBe("/login?next=%2Fpaths%2F123");
+    expect(routeRedirect("/courses/ielts/lessons/123", "", false)).toBe("/login?next=%2Fcourses%2Fielts%2Flessons%2F123");
     expect(routeRedirect("/some-new-page", "", false)).toBe("/login?next=%2Fsome-new-page");
   });
 

@@ -32,11 +32,12 @@ const STEP_LABELS: Record<Step, string> = { learn: "Xem từ", word: "Đọc t�
  * scored → read the stored example sentence aloud and get scored → next word. Finished words are added
  * to the review queue at the end.
  */
-export function VocabLesson({ setId, title, cards, speechEnabled }: {
+export function VocabLesson({ setId, title, cards, speechEnabled, onComplete }: {
   setId: string;
   title: string;
   cards: LessonCard[];
   speechEnabled: boolean;
+  onComplete?: () => Promise<void>;
 }) {
   const [index, setIndex] = useState(0);
   const [step, setStep] = useState<Step>("learn");
@@ -44,6 +45,8 @@ export function VocabLesson({ setId, title, cards, speechEnabled }: {
   const [scores, setScores] = useState<Scores>({});
   const [done, setDone] = useState<string[]>([]);
   const [finish, setFinish] = useState<{ added?: number; error?: string } | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   if (!cards.length) {
     return (
@@ -66,18 +69,29 @@ export function VocabLesson({ setId, title, cards, speechEnabled }: {
   }
 
   async function next() {
+    if (saving) return;
     if (!isLastStep) {
       setStep(steps[stepIndex + 1]);
       return;
     }
     const learned = [...done, card.id];
-    setDone(learned);
     if (index + 1 < cards.length) {
+      setDone(learned);
       setIndex(index + 1);
       setStep("learn");
       return;
     }
-    setFinish(await enrollLearnedCards(learned));
+    setSaving(true);
+    setSaveError("");
+    try {
+      const result = await enrollLearnedCards(learned);
+      if (onComplete) {
+        if (result.error) throw new Error(result.error);
+        await onComplete();
+      } else setFinish(result);
+    } catch (cause) {
+      setSaveError(cause instanceof Error ? cause.message : "Chưa lưu được từ đã học.");
+    } finally { setSaving(false); }
   }
 
   if (finish) {
@@ -158,16 +172,17 @@ export function VocabLesson({ setId, title, cards, speechEnabled }: {
           </div>
         )}
 
+        {saveError && <p role="alert" className="text-destructive">{saveError}</p>}
         <div className="flex flex-wrap items-center justify-end gap-3 border-t-2 pt-4">
           {step !== "learn" && speechEnabled && currentScore === undefined ? (
-            <button type="button" className="text-muted-foreground text-sm font-bold underline" onClick={() => void next()}>
+            <button type="button" disabled={saving} className="text-muted-foreground text-sm font-bold underline" onClick={() => void next()}>
               Bỏ qua bước này
             </button>
           ) : null}
           <Button
             type="button"
             onClick={() => void next()}
-            disabled={step !== "learn" && speechEnabled && currentScore === undefined}
+            disabled={saving || (step !== "learn" && speechEnabled && currentScore === undefined)}
           >
             {isLastStep && index + 1 === cards.length ? "Hoàn thành" : "Tiếp"}
             <ArrowRight aria-hidden="true" />

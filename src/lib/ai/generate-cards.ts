@@ -4,7 +4,6 @@ import { z } from "zod";
 import { getModel, isAiConfigured } from "./client";
 import { assertQuota, recordUsage } from "./quota";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { AiFeature } from "./quota-rules";
 import {
   generatedCardSchema, MAX_GENERATED_CARDS, mergeWordCards, readCachedCards,
   uniqueCards, wordsToGenerate, type GeneratedCard,
@@ -27,7 +26,7 @@ interface GenerateOptions {
   existingTerms: string[];
   userId: string;
   supabase: SupabaseClient;
-  pathQuota?: Extract<AiFeature, "generate-path" | "seed-paths">;
+  seedQuota?: "seed-courses";
   signal?: AbortSignal;
 }
 
@@ -42,11 +41,11 @@ export async function generateCards(options: GenerateOptions): Promise<Generated
     throw new Error("AI chưa được cấu hình. Vui lòng liên hệ quản trị viên.");
   }
 
-  const { pathQuota, signal } = options;
-  if (!pathQuota) await assertQuota(options.supabase, options.userId, "generate-cards");
-  const beforeRequest = pathQuota ? async () => {
-    await assertQuota(options.supabase, options.userId, pathQuota);
-    await recordUsage(options.supabase, options.userId, pathQuota);
+  const { seedQuota, signal } = options;
+  if (!seedQuota) await assertQuota(options.supabase, options.userId, "generate-cards");
+  const beforeRequest = seedQuota ? async () => {
+    await assertQuota(options.supabase, options.userId, seedQuota);
+    await recordUsage(options.supabase, options.userId, seedQuota);
   } : undefined;
 
   const { source, existingTerms, supabase } = options;
@@ -58,8 +57,8 @@ export async function generateCards(options: GenerateOptions): Promise<Generated
     const { data, error } = await supabase.from("word_cache").select("term, data").in("term", words);
     if (error) throw error;
     const cached = readCachedCards(words, data);
-    // Path cards need complete examples and IPA; enrich incomplete cache entries again.
-    if (pathQuota) {
+    // Course cards require complete examples and IPA.
+    if (seedQuota) {
       for (const [key, card] of cached.cache) {
         if (!card.ipa?.trim() || !card.example_en?.trim()) {
           cached.cache.delete(key);
@@ -82,7 +81,7 @@ export async function generateCards(options: GenerateOptions): Promise<Generated
     cards = uniqueCards(await requestCards(source, `${instruction} Return at most 30 cards.`, beforeRequest, signal), existingTerms);
   }
 
-  if (!pathQuota) await recordUsage(supabase, options.userId, "generate-cards");
+  if (!seedQuota) await recordUsage(supabase, options.userId, "generate-cards");
   return cards;
 }
 

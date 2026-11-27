@@ -21,6 +21,7 @@ type Props = {
   maxTurns: number;
   resume: Resume | null;
   warning?: string | null;
+  onComplete?: () => Promise<void>;
 };
 
 const panel = "space-y-4 rounded-3xl border-2 bg-card p-5 shadow-[0_4px_0_var(--border)]";
@@ -38,13 +39,13 @@ async function postJson<T>(path: string, body: object): Promise<T> {
 }
 
 /** Reads the NDJSON stream from the turn endpoint and returns the final reply text. */
-async function readTurnStream(response: Response, onDelta: (text: string) => void): Promise<{ text: string; stale: boolean }> {
+async function readTurnStream(response: Response, onDelta: (text: string) => void): Promise<string> {
   if (!response.body) throw new Error("Không đọc được phản hồi.");
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
   let text = "";
-  let stale = false;
+  let saved = false;
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -59,24 +60,25 @@ async function readTurnStream(response: Response, onDelta: (text: string) => voi
         onDelta(event.text);
       } else if (event.type === "done" && event.text) {
         text = event.text;
+        saved = true;
       } else if (event.type === "stale") {
-        stale = true;
+        throw new Error("Cuộc gọi đã thay đổi ở nơi khác. Hãy tải lại trang.");
       } else if (event.type === "error") {
         throw new Error(event.error ?? "Chưa tạo được câu trả lời.");
       }
     }
   }
-  if (!text.trim()) throw new Error("Câu trả lời trống. Hãy thử lại.");
-  return { text, stale };
+  if (!saved || !text.trim()) throw new Error("Chưa xác nhận được lượt nói. Hãy tải lại trang để tiếp tục.");
+  return text;
 }
 
-export function CallSession({ setId, setTitle, aiEnabled, scenarios, maxTurns, cardCount, resume, warning }: Props) {
+export function CallSession({ setId, setTitle, aiEnabled, scenarios, maxTurns, cardCount, resume, warning, onComplete }: Props) {
   const [threadId, setThreadId] = useState(resume?.threadId ?? "");
   const [scenario, setScenario] = useState(resume?.scenario ?? scenarios[0]?.id ?? "");
   const [messages, setMessages] = useState<ChatMessage[]>(resume?.messages ?? []);
   const [summary, setSummary] = useState<CallSummary | null>(null);
   const [finished, setFinished] = useState(false);
-  const [inputMode, setInputMode] = useState<"voice" | "text">("voice");
+  const [inputMode, setInputMode] = useState<"voice" | "text">(onComplete ? "text" : "voice");
   const [typed, setTyped] = useState("");
   const [recording, setRecording] = useState<RecordedAudio | null>(null);
   const [busy, setBusy] = useState<"start" | "turn" | "finish">();
@@ -108,7 +110,6 @@ export function CallSession({ setId, setTitle, aiEnabled, scenarios, maxTurns, c
     setBusy("start");
     try {
       const { threadId: id } = await postJson<{ threadId: string }>("/api/conversation", { setId, scenario });
-      setThreadId(id);
       // Second step: ask the turn endpoint for the opening greeting.
       const greeting = await postJson<{ greeting: string }>(`/api/conversation/${id}/turn`, {
         mode: "text",
@@ -116,6 +117,7 @@ export function CallSession({ setId, setTitle, aiEnabled, scenarios, maxTurns, c
         expectedTurns: 0,
       });
       setMessages([{ role: "assistant", content: greeting.greeting }]);
+      setThreadId(id);
       setSummary(null);
       setFinished(false);
       void playTts(greeting.greeting);
@@ -165,13 +167,12 @@ export function CallSession({ setId, setTitle, aiEnabled, scenarios, maxTurns, c
         const data = await response.json().catch(() => null);
         throw new Error(data?.error ?? "Chưa gửi được lượt nói.");
       }
-      const { text, stale } = await readTurnStream(response, (delta) => {
+      const text = await readTurnStream(response, (delta) => {
         setStreaming((prev) => prev + delta);
       });
       setStreaming("");
       setMessages((prev) => [...prev, { role: "assistant", content: text }]);
       void playTts(text);
-      if (stale) setError("Cuộc gọi đã thay đổi ở nơi khác. Hãy tải lại trang.");
       scrollDown();
     } catch (cause) {
       setStreaming("");
@@ -188,6 +189,7 @@ export function CallSession({ setId, setTitle, aiEnabled, scenarios, maxTurns, c
     setBusy("finish");
     try {
       const data = await postJson<{ summary: CallSummary }>(`/api/conversation/${threadId}/finish`, {});
+      await onComplete?.();
       setSummary(data.summary);
       setFinished(true);
     } catch (cause) {
@@ -241,7 +243,7 @@ export function CallSession({ setId, setTitle, aiEnabled, scenarios, maxTurns, c
             <h2 className="text-xl font-extrabold">{ended ? "Cuộc gọi đã kết thúc" : "Đang gọi"}</h2>
             <div className="flex items-center gap-3">
               <span className="text-sm font-bold text-muted-foreground">Còn {Math.max(remaining, 0)}/{maxTurns} lượt</span>
-              {ended && (
+              {ended && !onComplete && (
                 <Button type="button" variant="outline" size="sm" disabled={!!busy} onClick={resetForNewCall}>
                   Cuộc gọi mới
                 </Button>
@@ -297,7 +299,7 @@ export function CallSession({ setId, setTitle, aiEnabled, scenarios, maxTurns, c
                   onClick={sendTurn}>
                   {busy === "turn" ? "Đang xử lý..." : "Gửi lượt nói"}
                 </Button>
-                <Button type="button" variant="outline" disabled={!!busy || userTurns === 0} onClick={finishCall}>
+                <Button type="button" variant="outline" disabled={!!busy || userTurns < (onComplete ? 4 : 1)} onClick={finishCall}>
                   Kết thúc cuộc gọi
                 </Button>
               </div>
