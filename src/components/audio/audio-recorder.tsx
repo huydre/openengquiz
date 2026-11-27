@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Mic, Square } from "lucide-react";
 import { LogoLoader } from "@/components/layout/logo-loader";
 import { Button } from "@/components/ui/button";
 import { PCM_CAPTURE_WORKLET_CODE } from "./pcm-capture-worklet";
@@ -22,12 +23,14 @@ interface Recognition {
 
 export interface RecordedAudio { audio: Blob; transcript: string }
 
-export function AudioRecorder({ onRecording, transcribe = false, disabled = false, startLabel = "Ghi âm", recordingLabel }: {
+export function AudioRecorder({ onRecording, transcribe = false, disabled = false, startLabel = "Ghi âm", recordingLabel, variant = "default" }: {
   onRecording: (recording: RecordedAudio | null) => void;
   transcribe?: boolean;
   disabled?: boolean;
   startLabel?: string;
   recordingLabel?: string;
+  /** "compact": a single round mic button with timer and level ring (chat composers). */
+  variant?: "default" | "compact";
 }) {
   const [phase, setPhase] = useState<"idle" | "starting" | "recording" | "stopping">("idle");
   const [consent, setConsent] = useState(false);
@@ -197,6 +200,25 @@ export function AudioRecorder({ onRecording, transcribe = false, disabled = fals
           </div>
         </section>
       )}
+      {variant === "compact" ? (
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            aria-label={phase === "recording" ? "Dừng ghi âm" : startLabel}
+            disabled={phase === "starting" || phase === "stopping" || (disabled && phase !== "recording")}
+            onClick={() => phase === "recording" ? stop.current?.() : requestRecording()}
+            className={`relative grid size-14 shrink-0 place-items-center rounded-full text-white transition-transform active:scale-95 disabled:opacity-50 ${phase === "recording" ? "bg-destructive" : "bg-primary shadow-[0_4px_0_var(--primary-edge)]"}`}
+          >
+            {phase === "recording" && (
+              <span aria-hidden="true" className="bg-destructive/30 absolute inset-0 rounded-full" style={{ transform: `scale(${1 + level * 0.8})` }} />
+            )}
+            {phase === "recording" ? <Square className="relative size-5 fill-current" /> : <Mic className="relative size-6" />}
+          </button>
+          <span className="text-muted-foreground text-sm font-bold tabular-nums" aria-label="Thời gian ghi">
+            {phase === "recording" ? `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")} / 1:00` : phase === "idle" ? "Bấm để nói" : ""}
+          </span>
+        </div>
+      ) : (
       <div className="flex flex-wrap items-center gap-3">
         <Button type="button" disabled={phase === "starting" || phase === "stopping" || (disabled && phase !== "recording")}
           onClick={() => phase === "recording" ? stop.current?.() : requestRecording()}>
@@ -205,12 +227,13 @@ export function AudioRecorder({ onRecording, transcribe = false, disabled = fals
         <span className="tabular-nums" aria-label="Thời gian ghi">{Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")} / 1:00</span>
         {url && <Button type="button" variant="outline" disabled={disabled} onClick={() => { setUrl(undefined); setSeconds(0); onRecording(null); }}>Xóa bản ghi</Button>}
       </div>
-      {(phase === "starting" || phase === "stopping") && (
+      )}
+      {variant === "default" && (phase === "starting" || phase === "stopping") && (
         <LogoLoader size="sm" label={phase === "starting" ? "Đang mở mic" : "Đang xử lý bản ghi"} />
       )}
-      {phase === "recording" && <meter aria-label="Mức âm" min={0} max={1} value={level} className="w-full" />}
-      {phase === "recording" && recordingLabel && <p role="status" className="font-bold">{recordingLabel}</p>}
-      {url && <audio aria-label="Nghe lại bản ghi" controls src={url} className="w-full" />}
+      {variant === "default" && phase === "recording" && <meter aria-label="Mức âm" min={0} max={1} value={level} className="w-full" />}
+      {variant === "default" && phase === "recording" && recordingLabel && <p role="status" className="font-bold">{recordingLabel}</p>}
+      {variant === "default" && url && <audio aria-label="Nghe lại bản ghi" controls src={url} className="w-full" />}
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
     </div>
   );

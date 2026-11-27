@@ -7,6 +7,8 @@ import { LogoLoader } from "@/components/layout/logo-loader";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { playTts } from "@/lib/speech/play-tts";
+import { PhoneOff, SendHorizontal, Volume2 } from "lucide-react";
+import { TutorAvatar } from "@/components/tutor/tutor-avatar";
 import type { CallSummary } from "@/lib/ai/conversation-types";
 
 type ScenarioOption = { id: string; label: string };
@@ -25,7 +27,6 @@ type Props = {
 };
 
 const panel = "space-y-4 rounded-3xl border-2 bg-card p-5 shadow-[0_4px_0_var(--border)]";
-const area = "w-full rounded-2xl border-2 bg-background p-3 focus-visible:outline-2 focus-visible:outline-ring";
 
 async function postJson<T>(path: string, body: object): Promise<T> {
   const response = await fetch(path, {
@@ -78,9 +79,35 @@ export function CallSession({ setId, setTitle, aiEnabled, scenarios, maxTurns, c
   const [messages, setMessages] = useState<ChatMessage[]>(resume?.messages ?? []);
   const [summary, setSummary] = useState<CallSummary | null>(null);
   const [finished, setFinished] = useState(resume?.finished ?? false);
-  const [inputMode, setInputMode] = useState<"voice" | "text">(onComplete ? "text" : "voice");
+  const [inputMode] = useState<"voice" | "text">("text");
   const [typed, setTyped] = useState("");
   const [recording, setRecording] = useState<RecordedAudio | null>(null);
+  const [transcribing, setTranscribing] = useState(false);
+
+  // Voice input: transcribe right away (Groq, then our own Whisper) and put the text in the box,
+  // so the learner sees and can edit exactly what will be sent.
+  async function applyRecording(next: RecordedAudio | null) {
+    setError("");
+    if (!next) return;
+    const browserText = next.transcript.trim();
+    if (browserText) {
+      setTyped((current) => (current.trim() ? `${current.trim()} ${browserText}` : browserText));
+      return;
+    }
+    setTranscribing(true);
+    try {
+      const form = new FormData();
+      form.set("audio", next.audio, "recording.wav");
+      const response = await fetch("/api/speaking/transcribe", { method: "POST", body: form });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok || typeof body.text !== "string") throw new Error(body.error ?? "Chưa nghe rõ, bạn nói lại nhé.");
+      setTyped((current) => (current.trim() ? `${current.trim()} ${body.text}` : body.text));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Chưa nghe rõ, bạn nói lại nhé.");
+    } finally {
+      setTranscribing(false);
+    }
+  }
   const [busy, setBusy] = useState<"start" | "turn" | "finish">();
   const [streaming, setStreaming] = useState("");
   const [error, setError] = useState("");
@@ -246,9 +273,12 @@ export function CallSession({ setId, setTitle, aiEnabled, scenarios, maxTurns, c
       {threadId && !canStart && (
         <section className={panel}>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-xl font-extrabold">{ended ? "Cuộc gọi đã kết thúc" : "Đang gọi"}</h2>
+            <h2 className="flex items-center gap-2 text-xl font-extrabold">
+              {!ended && <span aria-hidden="true" className="bg-primary size-2.5 animate-pulse rounded-full" />}
+              {ended ? "Cuộc gọi đã kết thúc" : "Đang gọi"}
+            </h2>
             <div className="flex items-center gap-3">
-              <span className="text-sm font-bold text-muted-foreground">Còn {Math.max(remaining, 0)}/{maxTurns} lượt</span>
+              <span className="bg-secondary/10 text-secondary rounded-full px-3 py-1 text-sm font-extrabold">Còn {Math.max(remaining, 0)}/{maxTurns} lượt</span>
               {ended && !onComplete && (
                 <Button type="button" variant="outline" size="sm" disabled={!!busy} onClick={resetForNewCall}>
                   Cuộc gọi mới
@@ -256,24 +286,38 @@ export function CallSession({ setId, setTitle, aiEnabled, scenarios, maxTurns, c
               )}
             </div>
           </div>
-          <ol className="max-h-[50vh] space-y-3 overflow-y-auto rounded-2xl border-2 bg-background p-4">
-            {messages.map((message, index) => (
-              <li key={index} className={message.role === "user" ? "text-right" : "text-left"}>
-                <span className={`inline-block max-w-[85%] rounded-2xl px-4 py-2 text-left ${
-                  message.role === "user" ? "bg-primary text-primary-foreground" : "bg-card border-2"
-                }`}>
-                  <span className="mb-1 block text-xs font-extrabold opacity-70">
-                    {message.role === "user" ? "Bạn" : "AI"}
-                  </span>
-                  <span lang="en" className="whitespace-pre-wrap">{message.content}</span>
+          <ol className="bg-muted/40 max-h-[55vh] space-y-4 overflow-y-auto rounded-2xl p-4" aria-live="polite">
+            {messages.map((message, index) => message.role === "user" ? (
+              <li key={index} className="flex justify-end">
+                <span lang="en" className="bg-primary text-primary-foreground max-w-[80%] rounded-2xl rounded-br-md px-4 py-2.5 whitespace-pre-wrap shadow-[0_2px_0_var(--primary-edge)]">
+                  {message.content}
                 </span>
               </li>
+            ) : (
+              <li key={index} className="flex items-end gap-2">
+                <TutorAvatar />
+                <span className="bg-card max-w-[80%] rounded-2xl rounded-bl-md border-2 px-4 py-2.5">
+                  <span lang="en" className="whitespace-pre-wrap">{message.content}</span>
+                </span>
+                <button
+                  type="button"
+                  aria-label="Nghe lại câu này"
+                  onClick={() => void playTts(message.content)}
+                  className="text-muted-foreground hover:bg-card hover:text-secondary grid size-8 shrink-0 place-items-center rounded-full"
+                >
+                  <Volume2 aria-hidden="true" className="size-4" />
+                </button>
+              </li>
             ))}
-            {streaming && (
-              <li className="text-left">
-                <span className="inline-block max-w-[85%] rounded-2xl border-2 bg-card px-4 py-2 text-left">
-                  <span className="mb-1 block text-xs font-extrabold opacity-70">AI</span>
-                  <span lang="en" className="whitespace-pre-wrap">{streaming}</span>
+            {(streaming || busy === "turn") && (
+              <li className="flex items-end gap-2">
+                <TutorAvatar />
+                <span className="bg-card max-w-[80%] rounded-2xl rounded-bl-md border-2 px-4 py-2.5">
+                  {streaming ? <span lang="en" className="whitespace-pre-wrap">{streaming}</span> : (
+                    <span className="flex gap-1 py-1.5" aria-label="AI đang trả lời">
+                      {[0, 1, 2].map((dot) => <span key={dot} className="bg-muted-foreground/60 size-2 animate-bounce rounded-full" style={{ animationDelay: `${dot * 120}ms` }} />)}
+                    </span>
+                  )}
                 </span>
               </li>
             )}
@@ -282,34 +326,32 @@ export function CallSession({ setId, setTitle, aiEnabled, scenarios, maxTurns, c
 
           {!ended && (
             <div className="space-y-3">
-              <div className="flex gap-2">
-                {(["voice", "text"] as const).map((mode) => (
-                  <Button key={mode} type="button" variant={inputMode === mode ? "default" : "outline"}
-                    disabled={!!busy} onClick={() => setInputMode(mode)}>
-                    {mode === "voice" ? "Nói" : "Gõ chữ"}
-                  </Button>
-                ))}
-              </div>
-              {inputMode === "voice" ? (
-                <AudioRecorder disabled={!!busy} transcribe={false} onRecording={(next) => {
-                  setRecording(next);
-                  setError("");
-                }} />
-              ) : (
-                <textarea className={area} lang="en" rows={2} maxLength={2000} value={typed}
-                  disabled={!!busy} placeholder="Nhập câu tiếng Anh của bạn..."
-                  onChange={(e) => setTyped(e.target.value)} />
-              )}
-              <div className="flex flex-wrap gap-3">
-                <Button type="button" disabled={!!busy || (inputMode === "voice" ? !recording : !typed.trim())}
-                  onClick={sendTurn}>
-                  {busy === "turn" ? "Đang xử lý..." : "Gửi lượt nói"}
-                </Button>
-                <Button type="button" variant="outline" disabled={!!busy || userTurns < (onComplete ? 4 : 1)} onClick={finishCall}>
-                  Kết thúc cuộc gọi
+              <div className="bg-background flex items-end gap-3 rounded-3xl border-2 p-3 focus-within:border-primary">
+                <AudioRecorder variant="compact" disabled={!!busy || transcribing} transcribe startLabel="Nói câu trả lời" onRecording={(next) => void applyRecording(next)} />
+                <textarea
+                  aria-label="Câu trả lời tiếng Anh"
+                  lang="en"
+                  rows={2}
+                  maxLength={2000}
+                  value={typed}
+                  disabled={!!busy || transcribing}
+                  placeholder={transcribing ? "Đang chép lời bạn vừa nói..." : "Bấm mic để nói, hoặc gõ câu tiếng Anh..."}
+                  onChange={(e) => setTyped(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey && typed.trim() && !busy) { e.preventDefault(); void sendTurn(); }
+                  }}
+                  className="min-h-14 flex-1 resize-none bg-transparent py-2 outline-none"
+                />
+                <Button type="button" size="icon" aria-label="Gửi" disabled={!!busy || transcribing || !typed.trim()} onClick={sendTurn} className="size-12 shrink-0 rounded-full">
+                  <SendHorizontal aria-hidden="true" />
                 </Button>
               </div>
-              {busy === "turn" && <LogoLoader size="sm" label="AI đang trả lời" />}
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-muted-foreground text-xs">Enter để gửi · Shift + Enter xuống dòng · Sửa được bản chép trước khi gửi</p>
+                <Button type="button" variant="outline" size="sm" disabled={!!busy || userTurns < (onComplete ? 4 : 1)} onClick={finishCall}>
+                  <PhoneOff aria-hidden="true" /> Kết thúc cuộc gọi
+                </Button>
+              </div>
               {busy === "finish" && <LogoLoader size="sm" label="Đang tổng kết" />}
             </div>
           )}
