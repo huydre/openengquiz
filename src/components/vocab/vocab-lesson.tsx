@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, BookOpenCheck, Mic, Quote, Volume2 } from "lucide-react";
+import { ArrowRight, BookOpenCheck, Check, Eye, Mic, Quote, Volume2, X } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { enrollLearnedCards } from "@/app/(app)/sets/review-actions";
 import { playTts, type TtsAccent } from "@/lib/speech/play-tts";
 import { cn } from "@/lib/utils";
@@ -28,6 +27,7 @@ type Step = "learn" | "word" | "example";
 type Scores = Record<string, { word?: number; example?: number }>;
 
 const STEP_LABELS: Record<Step, string> = { learn: "Xem từ", word: "Đọc từ", example: "Đọc câu ví dụ" };
+const STEP_ICONS = { learn: Eye, word: Mic, example: Quote } as const;
 
 /**
  * Vocabulary lesson, one word at a time: learn the word (IPA, meaning, synonyms) → read it aloud and get
@@ -100,137 +100,184 @@ export function VocabLesson({ setId, title, cards, speechEnabled, onComplete }: 
     return <LessonSummary setId={setId} cards={cards} scores={scores} result={finish} />;
   }
 
-  return (
-    <div className="mx-auto max-w-2xl space-y-5">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-muted-foreground text-sm font-bold">{title}</p>
-          <h1 className="text-2xl font-black">Học từ mới</h1>
-        </div>
-        <div className="flex items-center gap-2 text-sm font-bold">
-          <span id="lesson-accent">Giọng</span>
-          <Select value={accent} onValueChange={(value) => setAccent(value as TtsAccent)}>
-            <SelectTrigger aria-labelledby="lesson-accent" size="sm"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="en-US">Mỹ</SelectItem>
-              <SelectItem value="en-GB">Anh</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </header>
+  const progress = done.length + stepIndex / steps.length;
 
-      <div className="space-y-2">
-        <div className="text-muted-foreground flex justify-between text-sm font-bold">
-          <span>Từ {index + 1}/{cards.length}</span>
-          <span>{STEP_LABELS[step]}</span>
-        </div>
+  return (
+    <div className="mx-auto max-w-3xl space-y-6 pb-4">
+      {/* Session bar: close, progress through the words, counter and voice. */}
+      <div className="flex items-center gap-3">
+        <Link
+          href={`/sets/${setId}`}
+          aria-label={`Thoát, về bộ từ ${title}`}
+          className="text-muted-foreground hover:bg-muted hover:text-foreground grid size-10 shrink-0 place-items-center rounded-xl transition-colors"
+        >
+          <X className="size-6" aria-hidden="true" />
+        </Link>
         <div
           role="progressbar"
           aria-label="Tiến độ bài học"
           aria-valuemin={0}
           aria-valuemax={cards.length}
           aria-valuenow={done.length}
-          className="bg-muted h-3 overflow-hidden rounded-full"
+          className="bg-muted h-4 flex-1 overflow-hidden rounded-full"
         >
-          <div className="bg-primary h-full rounded-full transition-[width]" style={{ width: `${(done.length / cards.length) * 100}%` }} />
+          <div className="bg-primary relative h-full rounded-full transition-[width] duration-500" style={{ width: `${Math.max(4, (progress / cards.length) * 100)}%` }}>
+            <span className="absolute inset-x-2 top-1 h-1 rounded-full bg-white/35" />
+          </div>
+        </div>
+        <span className="text-muted-foreground w-12 text-right text-sm font-black tabular-nums">{index + 1}/{cards.length}</span>
+        <div role="radiogroup" aria-label="Giọng đọc" className="bg-muted hidden rounded-xl p-1 sm:flex">
+          {(["en-US", "en-GB"] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={accent === value}
+              onClick={() => setAccent(value)}
+              className={cn("rounded-lg px-2.5 py-1 text-xs font-black", accent === value ? "bg-card shadow-sm" : "text-muted-foreground")}
+            >
+              {value === "en-US" ? "US" : "UK"}
+            </button>
+          ))}
         </div>
       </div>
 
-      <section className="bg-card space-y-5 rounded-3xl border-2 p-6 shadow-[0_4px_0_var(--border)]">
-        <ol className="flex gap-2" aria-label="Các bước">
-          {steps.map((s, i) => (
-            <li
-              key={s}
-              aria-current={s === step ? "step" : undefined}
-              className={cn(
-                "flex-1 rounded-full py-1 text-center text-xs font-extrabold uppercase",
-                i < stepIndex ? "bg-primary/20 text-sidebar-accent-foreground" : s === step ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
-              )}
-            >
-              {STEP_LABELS[s]}
+      {/* Steps for the current word. */}
+      <ol className="flex items-center" aria-label="Các bước">
+        {steps.map((s, i) => {
+          const Icon = STEP_ICONS[s];
+          const state = i < stepIndex ? "done" : s === step ? "current" : "todo";
+          return (
+            <li key={s} aria-current={state === "current" ? "step" : undefined} className="flex flex-1 items-center last:flex-none">
+              <span className="flex items-center gap-2">
+                <span className={cn(
+                  "grid size-9 place-items-center rounded-full border-2",
+                  state === "done" && "border-primary bg-primary text-primary-foreground",
+                  state === "current" && "border-secondary bg-secondary text-secondary-foreground",
+                  state === "todo" && "text-muted-foreground",
+                )}>
+                  {state === "done" ? <Check className="size-4" aria-hidden="true" /> : <Icon className="size-4" aria-hidden="true" />}
+                </span>
+                <span className={cn("hidden text-sm font-extrabold sm:inline", state === "todo" && "text-muted-foreground")}>{STEP_LABELS[s]}</span>
+              </span>
+              {i < steps.length - 1 ? <span className={cn("mx-3 h-1 flex-1 rounded-full", i < stepIndex ? "bg-primary" : "bg-muted")} /> : null}
             </li>
-          ))}
-        </ol>
+          );
+        })}
+      </ol>
 
+      <section key={`${card.id}:${step}`} className="bg-card rounded-[2rem] border-2 p-6 shadow-[0_6px_0_var(--border)] animate-[study-rise_0.25s_ease-out] sm:p-8">
         {step === "learn" ? (
           <WordDetails card={card} accent={accent} />
         ) : (
-          <div className="space-y-3">
-            <h2 className="flex items-center gap-2 text-lg font-extrabold">
-              {step === "word" ? <Mic aria-hidden="true" className="text-destructive size-5" /> : <Quote aria-hidden="true" className="text-secondary size-5" />}
+          <div className="space-y-4">
+            <p className="text-muted-foreground flex items-center gap-2 text-xs font-extrabold tracking-wide uppercase">
+              {step === "word" ? <Mic aria-hidden="true" className="size-4" /> : <Quote aria-hidden="true" className="size-4" />}
               {step === "word" ? "Đọc to từ này" : "Đọc to câu ví dụ"}
-            </h2>
-            {step === "example" && card.example_vi ? (
-              <p className="text-muted-foreground">{card.example_vi}</p>
-            ) : null}
+            </p>
             <PronounceStep
-              key={`${card.id}:${step}`}
               text={step === "word" ? card.term : card.example_en!}
               cardId={card.id}
               accent={accent}
               enabled={speechEnabled}
               onScored={(value) => record(step as "word" | "example", value)}
             />
+            {step === "example" && card.example_vi ? <p className="text-muted-foreground text-center font-semibold">{card.example_vi}</p> : null}
           </div>
         )}
-
-        {saveError && <p role="alert" className="text-destructive">{saveError}</p>}
-        <div className="flex flex-wrap items-center justify-end gap-3 border-t-2 pt-4">
-          {step !== "learn" && speechEnabled && currentScore === undefined ? (
-            <button type="button" disabled={saving} className="text-muted-foreground text-sm font-bold underline" onClick={() => void next()}>
-              Bỏ qua bước này
-            </button>
-          ) : null}
-          <Button
-            type="button"
-            onClick={() => void next()}
-            disabled={saving || (step !== "learn" && speechEnabled && currentScore === undefined)}
-          >
-            {isLastStep && index + 1 === cards.length ? "Hoàn thành" : "Tiếp"}
-            <ArrowRight aria-hidden="true" />
-          </Button>
-        </div>
       </section>
+
+      {saveError ? <p role="alert" className="text-destructive font-bold">{saveError}</p> : null}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {step !== "learn" && speechEnabled && currentScore === undefined ? (
+          <button type="button" disabled={saving} className="text-muted-foreground hover:text-foreground text-sm font-extrabold" onClick={() => void next()}>
+            Bỏ qua bước này
+          </button>
+        ) : <span />}
+        <Button
+          type="button"
+          size="lg"
+          className="h-14 px-10 text-base"
+          onClick={() => void next()}
+          disabled={saving || (step !== "learn" && speechEnabled && currentScore === undefined)}
+        >
+          {saving ? "Đang lưu..." : isLastStep && index + 1 === cards.length ? "Hoàn thành" : "Tiếp tục"}
+          <ArrowRight aria-hidden="true" />
+        </Button>
+      </div>
     </div>
+  );
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** The example sentence with the learned word highlighted (matched without trailing punctuation). */
+function HighlightedExample({ text, term }: { text: string; term: string }) {
+  const core = term.trim().replace(/[\s.!?,;:]+$/u, "");
+  const parts = core ? text.split(new RegExp(`(${escapeRegExp(core)})`, "i")) : [text];
+  return (
+    <>
+      {parts.map((part, index) => part.toLowerCase() === core.toLowerCase()
+        ? <mark key={index} className="bg-primary/20 text-foreground rounded px-1">{part}</mark>
+        : <span key={index}>{part}</span>)}
+    </>
   );
 }
 
 function WordDetails({ card, accent }: { card: LessonCard; accent: TtsAccent }) {
   const synonyms = card.synonyms?.filter(Boolean) ?? [];
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-end gap-3">
-        <h2 lang="en" className="text-4xl font-black">{card.term}</h2>
-        {card.ipa ? <span className="text-muted-foreground text-lg"><Ipa value={card.ipa} /></span> : null}
+    <div className="space-y-6">
+      <div className="flex flex-col items-center gap-4 text-center">
         {card.part_of_speech ? (
-          <span className="bg-secondary/15 text-secondary rounded-full px-3 py-0.5 text-sm font-bold">{card.part_of_speech}</span>
+          <span className="bg-secondary/15 text-secondary rounded-full px-3 py-1 text-xs font-extrabold">{card.part_of_speech}</span>
         ) : null}
-        <Button type="button" variant="secondary" size="sm" onClick={() => void playTts(card.term, { accent })}>
-          <Volume2 aria-hidden="true" /> Nghe
-        </Button>
+        {card.image_url ? (
+          // Learner-chosen illustration (remote or uploaded), kept at its own aspect ratio.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={card.image_url} alt="" className="h-auto max-h-44 w-auto max-w-[80%] rounded-2xl shadow-sm" />
+        ) : null}
+        <h2 lang="en" className="text-5xl font-black tracking-tight text-balance break-words">{card.term}</h2>
+        {card.ipa ? <p className="text-muted-foreground text-xl"><Ipa value={card.ipa} /></p> : null}
+        <button
+          type="button"
+          aria-label={`Nghe phát âm ${card.term}`}
+          onClick={() => void playTts(card.term, { accent })}
+          className="bg-secondary text-secondary-foreground grid size-16 place-items-center rounded-full shadow-[0_5px_0_var(--secondary-edge)] active:translate-y-1 active:shadow-none"
+        >
+          <Volume2 className="size-8" aria-hidden="true" />
+        </button>
       </div>
 
-      <div className="space-y-1">
-        {card.definition_vi ? <p className="text-xl font-bold">{card.definition_vi}</p> : null}
-        {card.definition_en ? <p lang="en" className="text-muted-foreground">{card.definition_en}</p> : null}
+      <div className="space-y-1 border-t-2 pt-5 text-center">
+        {card.definition_vi ? <p className="text-2xl font-black">{card.definition_vi}</p> : null}
+        {card.definition_en ? <p lang="en" className="text-muted-foreground text-lg">{card.definition_en}</p> : null}
       </div>
 
       {card.example_en ? (
-        <div className="bg-muted space-y-1 rounded-2xl p-4">
-          <p className="flex items-start gap-2">
-            <Quote aria-hidden="true" className="text-secondary mt-1 size-4 shrink-0" />
-            <span lang="en" className="font-semibold">{card.example_en}</span>
-          </p>
-          {card.example_vi ? <p className="text-muted-foreground pl-6 text-sm">{card.example_vi}</p> : null}
-          <Button type="button" variant="ghost" size="sm" onClick={() => void playTts(card.example_en!, { accent })}>
-            <Volume2 aria-hidden="true" /> Nghe câu
-          </Button>
+        <div className="bg-muted/60 rounded-2xl p-5">
+          <div className="flex items-start gap-3">
+            <button
+              type="button"
+              aria-label="Nghe câu ví dụ"
+              onClick={() => void playTts(card.example_en!, { accent })}
+              className="bg-card text-secondary grid size-10 shrink-0 place-items-center rounded-full border-2"
+            >
+              <Volume2 className="size-5" aria-hidden="true" />
+            </button>
+            <div className="min-w-0">
+              <p lang="en" className="text-lg font-bold"><HighlightedExample text={card.example_en} term={card.term} /></p>
+              {card.example_vi ? <p className="text-muted-foreground mt-1 font-semibold">{card.example_vi}</p> : null}
+            </div>
+          </div>
         </div>
       ) : null}
 
       {synonyms.length ? (
         <div className="space-y-2">
-          <p className="text-sm font-extrabold uppercase">Từ đồng nghĩa</p>
+          <p className="text-muted-foreground text-xs font-extrabold tracking-wide uppercase">Từ đồng nghĩa</p>
           <div className="flex flex-wrap gap-2">
             {synonyms.map((word) => (
               <button
@@ -238,9 +285,9 @@ function WordDetails({ card, accent }: { card: LessonCard; accent: TtsAccent }) 
                 type="button"
                 lang="en"
                 onClick={() => void playTts(word, { accent })}
-                className="hover:bg-muted rounded-full border-2 px-3 py-1 text-sm font-bold"
+                className="hover:bg-muted flex items-center gap-1.5 rounded-full border-2 px-3 py-1 text-sm font-bold"
               >
-                {word}
+                <Volume2 className="text-muted-foreground size-3.5" aria-hidden="true" />{word}
               </button>
             ))}
           </div>
@@ -260,27 +307,52 @@ function LessonSummary({ setId, cards, scores, result }: {
     const s = scores[card.id];
     return (s?.word ?? 1) < PASS_SCORE || (s?.example ?? 1) < PASS_SCORE;
   });
+  const scored = Object.values(scores).flatMap((s) => [s.word, s.example]).filter((value): value is number => value !== undefined);
+  const average = scored.length ? Math.round((scored.reduce((sum, value) => sum + value, 0) / scored.length) * 100) : null;
   return (
-    <div className="mx-auto max-w-2xl space-y-5 text-center">
-      <BookOpenCheck aria-hidden="true" className="text-primary mx-auto size-14" />
-      <h1 className="text-3xl font-black">Xong {cards.length} từ!</h1>
-      <p role="status" className={result.error ? "text-destructive font-bold" : "text-muted-foreground"}>
-        {result.error ?? `Đã thêm ${result.added ?? 0} từ mới vào lịch ôn tập.`}
-      </p>
+    <div className="mx-auto max-w-3xl space-y-5 pb-4">
+      <section className="bg-card relative overflow-hidden rounded-[2rem] border-2 p-8 text-center shadow-[0_6px_0_var(--border)]">
+        <div aria-hidden="true" className="bg-primary/15 absolute -top-24 left-1/2 size-72 -translate-x-1/2 rounded-full blur-3xl" />
+        <span className="bg-primary text-primary-foreground relative mx-auto grid size-20 place-items-center rounded-3xl shadow-[0_5px_0_var(--primary-edge)]">
+          <BookOpenCheck className="size-10" aria-hidden="true" />
+        </span>
+        <h1 className="relative mt-5 text-3xl font-black tracking-tight">Xong {cards.length} từ mới!</h1>
+        <p role="status" className={cn("relative mt-1 text-lg", result.error ? "text-destructive font-bold" : "text-muted-foreground")}>
+          {result.error ?? `Đã thêm ${result.added ?? 0} từ vào lịch ôn tập. Ôn đúng lúc để nhớ lâu.`}
+        </p>
+        <div className="relative mt-6 grid grid-cols-3 gap-3">
+          <SummaryStat value={cards.length} label="Từ đã học" />
+          <SummaryStat value={average === null ? "–" : `${average}%`} label="Phát âm TB" />
+          <SummaryStat value={weak.length} label="Cần luyện thêm" />
+        </div>
+        <div className="relative mt-7 flex flex-col justify-center gap-3 sm:flex-row">
+          <Link href="/review" className={buttonVariants({ size: "lg" })}>Ôn tập ngay</Link>
+          <Link href={`/sets/${setId}`} className={buttonVariants({ size: "lg", variant: "outline" })}>Về bộ từ</Link>
+        </div>
+      </section>
       {weak.length ? (
-        <div className="bg-card rounded-3xl border-2 p-5 text-left">
-          <p className="mb-2 font-extrabold">Nên luyện phát âm thêm</p>
-          <ul className="flex flex-wrap gap-2">
+        <section className="bg-card rounded-[2rem] border-2 p-6 shadow-[0_6px_0_var(--border)]">
+          <h2 className="text-lg font-black">Nên luyện phát âm thêm</h2>
+          <ul className="mt-3 flex flex-wrap gap-2">
             {weak.map((card) => (
-              <li key={card.id} lang="en" className="text-destructive rounded-full border-2 px-3 py-1 font-bold">{card.term}</li>
+              <li key={card.id}>
+                <button type="button" onClick={() => void playTts(card.term)} lang="en" className="border-brand-orange/40 bg-brand-orange/10 text-brand-orange flex items-center gap-1.5 rounded-full border-2 px-3 py-1 font-bold">
+                  <Volume2 className="size-4" aria-hidden="true" />{card.term}
+                </button>
+              </li>
             ))}
           </ul>
-        </div>
+        </section>
       ) : null}
-      <div className="flex flex-wrap justify-center gap-3">
-        <Link href="/review" className={buttonVariants()}>Ôn tập ngay</Link>
-        <Link href={`/sets/${setId}`} className={buttonVariants({ variant: "outline" })}>Về bộ từ</Link>
-      </div>
+    </div>
+  );
+}
+
+function SummaryStat({ value, label }: { value: React.ReactNode; label: string }) {
+  return (
+    <div className="bg-muted/60 rounded-2xl p-3">
+      <p className="text-2xl font-black tabular-nums">{value}</p>
+      <p className="text-muted-foreground text-xs font-extrabold uppercase">{label}</p>
     </div>
   );
 }
