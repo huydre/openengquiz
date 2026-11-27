@@ -365,7 +365,8 @@ export function CourseActivityLesson(props: CourseActivityLessonProps) {
         </section>
       ) : (
         <section className="space-y-4" aria-label={descriptor.titleVi}>
-          <div className="space-y-2">
+          {/* During the tutor intro only the lesson header shows, as in the reference flow. */}
+          <div className={cn("space-y-2", showIntro && "hidden")}>
             <div className="flex items-center justify-between gap-2">
               <span className="bg-card rounded-full border-2 px-3 py-0.5 text-sm font-extrabold">{stepLabel}</span>
               {descriptor.smallSteps > 1 ? (

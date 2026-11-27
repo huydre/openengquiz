@@ -8,11 +8,11 @@ export const metadata = { title: "Lịch sử học AI" };
 
 export default function Page() {
   return (
-    <main className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       <h1 className="text-3xl font-black">Lịch sử học AI</h1>
       <Link className="font-bold underline" href="/speaking/history">Lịch sử phát âm</Link>
       <Suspense fallback={<LogoLoader label="Đang tải lịch sử" />}><Recent /></Suspense>
-    </main>
+    </div>
   );
 }
 

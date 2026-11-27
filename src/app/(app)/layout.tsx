@@ -33,7 +33,7 @@ async function SignedInShell({ children }: { children: React.ReactNode }) {
         <header className="flex h-12 items-center gap-2 border-b px-3">
           <SidebarTrigger aria-label="Mở hoặc thu gọn menu" />
         </header>
-        <main className="flex-1 p-4 md:p-8">{children}</main>
+        <div className="flex-1 p-4 md:p-8">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );
