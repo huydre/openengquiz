@@ -1,10 +1,18 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
+import { ArrowRight, Brain, Check, History, Languages, Lightbulb, RefreshCw, RotateCcw, Sparkles, Volume2, Wrench } from "lucide-react";
 import { LogoLoader } from "@/components/layout/logo-loader";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
+import { ModeCard, ModeIntro, ModeNotice, ModeTopBar, TopBarLink } from "@/components/study/mode-shell";
+import { playTts } from "@/lib/speech/play-tts";
+import { cn } from "@/lib/utils";
 import type { GrammarGrade, GrammarMode } from "@/lib/ai/grammar";
+
+const GRAMMAR_MODES = [
+  { value: "translate" as const, label: "Dịch Việt → Anh", text: "Dịch một câu tiếng Việt dùng từ trong bộ.", icon: Languages },
+  { value: "fix" as const, label: "Sửa câu sai", text: "Tìm và sửa lỗi ngữ pháp trong câu tiếng Anh.", icon: Wrench },
+];
 
 export type WrongAttempt = {
   id: string;
@@ -22,8 +30,6 @@ type ExerciseState =
 
 type GradeState = GrammarGrade & { saved: boolean };
 
-const panel = "space-y-4 rounded-3xl border-2 bg-card p-5 shadow-[0_4px_0_var(--border)]";
-const area = "w-full rounded-2xl border-2 bg-background p-3 focus-visible:outline-2 focus-visible:outline-ring";
 
 async function post<T>(body: object): Promise<T> {
   const response = await fetch("/api/ai/grammar", {
@@ -115,133 +121,177 @@ export function GrammarPractice({
   }
 
   const canAnswer = aiEnabled && terms.length > 0;
+  const targets = exercise ? (exercise.kind === "translate" ? exercise.used_terms : exercise.target_terms) : [];
+  const scoreTone = grade ? (grade.score >= 90 ? "good" : grade.score >= 60 ? "ok" : "bad") : "good";
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 pb-4">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-black">Ngữ pháp AI</h1>
-          <Link href={`/sets/${setId}`} className="text-sm font-bold underline">Về bộ từ: {setTitle}</Link>
-        </div>
-        <Link href="/history" className={buttonVariants({ variant: "outline" })}>Lịch sử</Link>
-      </header>
+      <ModeTopBar setId={setId} title={setTitle}>
+        <TopBarLink href="/history" icon={History}>Lịch sử</TopBarLink>
+      </ModeTopBar>
 
-      {!aiEnabled && (
-        <p role="status" className="rounded-2xl border-2 border-dashed p-4 text-sm font-bold">
-          AI chưa được bật. Bạn vẫn xem lại các câu đã luyện bên dưới.
-        </p>
-      )}
-      {aiEnabled && !terms.length && <p>Bộ từ chưa có thẻ để luyện ngữ pháp.</p>}
+      {!aiEnabled ? <ModeNotice>AI chưa được bật. Bạn vẫn xem lại được các câu đã luyện bên dưới.</ModeNotice> : null}
+      {aiEnabled && !terms.length ? <ModeNotice>Bộ từ chưa có thẻ để luyện ngữ pháp.</ModeNotice> : null}
 
-      {canAnswer && (
-        <section className={panel}>
-          <div className="flex flex-wrap items-center gap-2">
-            {(["translate", "fix"] as const).map((m) => (
-              <Button key={m} type="button"
-                variant={mode === m ? "default" : "outline"}
-                disabled={!!busy}
-                onClick={() => { setMode(m); reset(); }}>
-                {m === "translate" ? "Dịch Việt → Anh" : "Sửa câu sai"}
+      {canAnswer && !exercise ? (
+        <ModeIntro
+          icon={Brain}
+          tone="bg-brand-grape/15 text-brand-grape"
+          title="Ngữ pháp AI"
+          description="AI tạo câu dùng từ trong bộ của bạn, chấm câu trả lời và giải thích từng lỗi."
+          footer={
+            <>
+              <p className="text-muted-foreground text-sm font-bold">Mẹo: Ctrl + Enter để chấm bài.</p>
+              <Button type="button" size="lg" className="h-14 px-10 text-base" disabled={!!busy} onClick={() => void loadExercise()}>
+                {busy === "exercise" ? "Đang tạo bài tập..." : <><Sparkles aria-hidden="true" /> Tạo bài tập</>}
               </Button>
+            </>
+          }
+        >
+          <div role="radiogroup" aria-label="Dạng bài" className="grid gap-3 sm:grid-cols-2">
+            {GRAMMAR_MODES.map(({ value, label, text, icon: Icon }) => (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={mode === value}
+                disabled={!!busy}
+                onClick={() => { setMode(value); reset(); }}
+                className={cn(
+                  "flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition-colors",
+                  mode === value ? "border-brand-grape bg-brand-grape/10" : "hover:bg-muted",
+                )}
+              >
+                <span className={cn("grid size-11 shrink-0 place-items-center rounded-xl", mode === value ? "bg-brand-grape text-white" : "bg-muted")}>
+                  <Icon className="size-5" aria-hidden="true" />
+                </span>
+                <span>
+                  <span className="block text-lg font-black">{label}</span>
+                  <span className="text-muted-foreground block text-sm font-semibold">{text}</span>
+                </span>
+              </button>
             ))}
           </div>
-          <p className="text-sm text-muted-foreground">
-            {mode === "translate"
-              ? "AI đưa một câu tiếng Việt dùng từ trong bộ. Hãy dịch sang tiếng Anh tự nhiên."
-              : "AI đưa một câu tiếng Anh có lỗi ngữ pháp. Hãy sửa lại cho đúng."}
-          </p>
-          {!exercise ? (
-            <Button type="button" disabled={!!busy} onClick={() => void loadExercise()}>
-              Tạo bài tập
-            </Button>
+        </ModeIntro>
+      ) : null}
+
+      {canAnswer && exercise ? (
+        <ModeCard className="space-y-5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="bg-brand-grape/15 text-brand-grape rounded-full px-3 py-1 text-xs font-extrabold uppercase">
+              {exercise.kind === "translate" ? "Dịch sang tiếng Anh" : "Sửa câu sai"}
+            </span>
+            {targets.map((term) => <span key={term} lang="en" className="bg-muted rounded-full px-3 py-1 text-xs font-extrabold">{term}</span>)}
+          </div>
+          {exercise.kind === "translate" ? (
+            <p lang="vi" className="text-2xl leading-snug font-black text-balance sm:text-3xl">{exercise.prompt_vi}</p>
           ) : (
-            <div className="space-y-3">
-              <div className="rounded-2xl border-2 bg-background p-4">
-                {exercise.kind === "translate" ? (
-                  <p lang="vi" className="text-lg font-bold">{exercise.prompt_vi}</p>
-                ) : (
-                  <div className="space-y-2">
-                    <p lang="en" className="text-lg font-bold">{exercise.wrong_en}</p>
-                    {exercise.hint_vi && <p className="text-sm text-muted-foreground">Gợi ý: {exercise.hint_vi}</p>}
-                  </div>
-                )}
-                {(exercise.kind === "translate" ? exercise.used_terms : exercise.target_terms).length > 0 && (
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Từ mục tiêu: {(exercise.kind === "translate" ? exercise.used_terms : exercise.target_terms).join(", ")}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="grammar-answer" className="font-extrabold">
-                  {exercise.kind === "translate" ? "Câu dịch của bạn" : "Câu đã sửa"}
-                </label>
-                <textarea id="grammar-answer" className={area} lang="en" rows={3} maxLength={2000}
-                  disabled={!!busy} value={answer} placeholder="Nhập câu trả lời bằng tiếng Anh..."
-                  onChange={(e) => { setAnswer(e.target.value); setGrade(undefined); }} />
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button type="button" disabled={!!busy || !answer.trim()} onClick={() => void submitGrade()}>
-                  Chấm bài
-                </Button>
-                <Button type="button" variant="outline" disabled={!!busy} onClick={() => void loadExercise()}>
-                  Bài mới
-                </Button>
-              </div>
+            <div className="space-y-2">
+              <p lang="en" className="decoration-destructive/60 text-2xl leading-snug font-black text-balance underline decoration-wavy decoration-2 underline-offset-8 sm:text-3xl">{exercise.wrong_en}</p>
+              {exercise.hint_vi ? <p className="text-muted-foreground flex items-center gap-1.5 font-semibold"><Lightbulb className="text-accent size-4" aria-hidden="true" />{exercise.hint_vi}</p> : null}
             </div>
           )}
-          {busy === "exercise" && <LogoLoader size="sm" label="Đang tạo bài tập" />}
-          {busy === "grade" && <LogoLoader size="sm" label="Đang chấm bài" />}
-        </section>
-      )}
-
-      {error && <p role="alert" className="text-sm font-bold text-destructive">{error}</p>}
-
-      {grade && (
-        <section className={panel}>
-          <h2 className="text-xl font-extrabold">Kết quả: {grade.score}%</h2>
-          {!grade.saved && <p className="text-sm text-muted-foreground">Bài này chưa lưu được vào lịch sử.</p>}
-          <div className="rounded-2xl border-2 bg-background p-4">
-            <p className="text-sm font-bold text-muted-foreground">Câu đúng</p>
-            <p lang="en" className="text-lg font-bold">{grade.corrected_en}</p>
+          <div className="space-y-2">
+            <label htmlFor="grammar-answer" className="font-extrabold">{exercise.kind === "translate" ? "Câu dịch của bạn" : "Câu đã sửa"}</label>
+            <textarea
+              id="grammar-answer"
+              lang="en"
+              rows={3}
+              maxLength={2000}
+              disabled={!!busy}
+              value={answer}
+              placeholder="Viết câu tiếng Anh..."
+              onChange={(e) => { setAnswer(e.target.value); setGrade(undefined); }}
+              onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && answer.trim() && !busy) void submitGrade(); }}
+              className="bg-background focus:border-brand-grape w-full rounded-2xl border-2 p-4 text-lg font-semibold outline-none"
+            />
           </div>
-          <p lang="vi">{grade.explanation_vi}</p>
-          {grade.mistakes.length > 0 && (
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+            <Button type="button" variant="outline" size="lg" disabled={!!busy} onClick={() => void loadExercise()}>
+              <RefreshCw aria-hidden="true" /> Bài mới
+            </Button>
+            <Button type="button" size="lg" className="sm:px-10" disabled={!!busy || !answer.trim()} onClick={() => void submitGrade()}>
+              {busy === "grade" ? "Đang chấm..." : "Chấm bài"}
+            </Button>
+          </div>
+          {busy === "exercise" ? <LogoLoader size="sm" label="Đang tạo bài tập" /> : null}
+        </ModeCard>
+      ) : null}
+
+      {error ? <p role="alert" className="text-destructive font-bold">{error}</p> : null}
+
+      {grade ? (
+        <ModeCard className="space-y-5 animate-[study-rise_0.25s_ease-out]">
+          <div className="flex items-center gap-4">
+            <span className={cn(
+              "grid size-20 shrink-0 place-items-center rounded-3xl text-3xl font-black tabular-nums text-white",
+              scoreTone === "good" ? "bg-primary shadow-[0_5px_0_var(--primary-edge)]" : scoreTone === "ok" ? "bg-brand-orange" : "bg-destructive",
+            )}>
+              {grade.score}
+            </span>
+            <div>
+              <p className="text-2xl font-black">{scoreTone === "good" ? "Rất tốt!" : scoreTone === "ok" ? "Gần đúng rồi!" : "Cần sửa thêm"}</p>
+              <p className="text-muted-foreground font-semibold">{grade.saved ? "Điểm trên 100, đã lưu vào lịch sử." : "Điểm trên 100. Bài này chưa lưu được vào lịch sử."}</p>
+            </div>
+          </div>
+          <div className="bg-primary/10 rounded-2xl p-4">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-primary-edge flex items-center gap-2 text-sm font-extrabold uppercase"><Check className="size-4" aria-hidden="true" /> Câu đúng</p>
+              <button type="button" onClick={() => void playTts(grade.corrected_en)} aria-label="Nghe câu đúng" className="text-primary-edge grid size-9 place-items-center rounded-full hover:bg-primary/15">
+                <Volume2 className="size-5" aria-hidden="true" />
+              </button>
+            </div>
+            <p lang="en" className="mt-1 text-xl font-bold">{grade.corrected_en}</p>
+          </div>
+          <p lang="vi" className="text-lg leading-relaxed">{grade.explanation_vi}</p>
+          {grade.mistakes.length ? (
             <ul className="space-y-2">
               {grade.mistakes.map((m, i) => (
-                <li key={i} className="rounded-2xl border-2 p-3 text-sm">
-                  <p lang="en"><span className="line-through">{m.original}</span> → <strong>{m.replacement}</strong></p>
-                  <p className="text-muted-foreground">{m.explanation_vi}</p>
+                <li key={i} className="rounded-2xl border-2 p-4">
+                  <p lang="en" className="flex flex-wrap items-center gap-2 text-lg font-bold">
+                    <span className="bg-destructive/10 text-destructive rounded-lg px-2 line-through decoration-2">{m.original}</span>
+                    <ArrowRight className="text-muted-foreground size-4" aria-hidden="true" />
+                    <span className="bg-primary/12 text-primary-edge rounded-lg px-2">{m.replacement}</span>
+                  </p>
+                  <p className="text-muted-foreground mt-1.5">{m.explanation_vi}</p>
                 </li>
               ))}
             </ul>
-          )}
-        </section>
-      )}
+          ) : null}
+          <Button type="button" size="lg" className="w-full" disabled={!!busy} onClick={() => void loadExercise()}>
+            Bài tiếp theo <ArrowRight aria-hidden="true" />
+          </Button>
+        </ModeCard>
+      ) : null}
 
-      <section className={panel}>
-        <h2 className="text-xl font-extrabold">Câu cần ôn lại ({wrongAttempts.length})</h2>
+      <ModeCard>
+        <h2 className="flex items-center gap-2 text-xl font-black">
+          <RotateCcw className="text-brand-grape size-5" aria-hidden="true" /> Câu cần ôn lại <span className="text-muted-foreground">({wrongAttempts.length})</span>
+        </h2>
         {!wrongAttempts.length ? (
-          <p className="text-muted-foreground">Chưa có câu nào sai. Hãy luyện một bài để bắt đầu.</p>
+          <p className="text-muted-foreground mt-3 font-semibold">Chưa có câu nào cần ôn. Luyện vài bài để bắt đầu nhé.</p>
         ) : (
-          <ul className="space-y-3">
+          <ul className="mt-4 divide-y-2">
             {wrongAttempts.map((attempt) => (
-              <li key={attempt.id} className="border-t pt-3">
-                <p className="font-bold">
-                  {attempt.mode === "fix" ? "Sửa câu sai" : "Dịch câu"} · {attempt.score}%
-                </p>
-                <p lang={attempt.mode === "fix" ? "en" : "vi"}>{attempt.prompt}</p>
-                <p lang="en" className="text-sm text-muted-foreground">Đáp án: {attempt.reference}</p>
-                {aiEnabled && (
-                  <Button type="button" variant="outline" size="sm" className="mt-2"
-                    disabled={!!busy} onClick={() => retryAttempt(attempt)}>
-                    Làm lại câu này
+              <li key={attempt.id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0 space-y-1">
+                  <p className="flex items-center gap-2 text-xs font-extrabold uppercase">
+                    <span className="text-muted-foreground">{attempt.mode === "fix" ? "Sửa câu sai" : "Dịch câu"}</span>
+                    <span className={cn("rounded-full px-2 py-0.5", attempt.score >= 60 ? "bg-brand-orange/15 text-brand-orange" : "bg-destructive/10 text-destructive")}>{attempt.score} điểm</span>
+                  </p>
+                  <p lang={attempt.mode === "fix" ? "en" : "vi"} className="font-bold">{attempt.prompt}</p>
+                  <p lang="en" className="text-muted-foreground text-sm">Đáp án: {attempt.reference}</p>
+                </div>
+                {aiEnabled ? (
+                  <Button type="button" variant="outline" size="sm" disabled={!!busy} onClick={() => retryAttempt(attempt)}>
+                    <RotateCcw aria-hidden="true" /> Làm lại
                   </Button>
-                )}
+                ) : null}
               </li>
             ))}
           </ul>
         )}
-      </section>
+      </ModeCard>
     </div>
   );
 }

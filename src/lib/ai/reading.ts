@@ -40,7 +40,11 @@ const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&
  * simple inflections (plural s/es, past -ed, -ing, -er/-est) on the final word.
  */
 function termPattern(term: string): RegExp {
-  const words = term.trim().split(/\s+/).filter(Boolean);
+  // Phrase cards often end in punctuation ("do you want to play?"). A word boundary after "?"
+  // never matches before a space, and the passage may not repeat the mark, so match the words only.
+  const core = term.trim().replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "");
+  const words = core.split(/\s+/).filter(Boolean);
+  if (!words.length) return /(?!)/;
   const last = words.at(-1) ?? "";
   const stem = last.replace(/(ies|es|s|ed|ing)$/, "");
   const tail =

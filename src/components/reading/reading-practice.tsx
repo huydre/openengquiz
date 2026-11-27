@@ -1,10 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
+import { ArrowRight, BookOpenText, Check, History, RefreshCw, Sparkles, Volume2, X } from "lucide-react";
 import { LogoLoader } from "@/components/layout/logo-loader";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { ModeCard, ModeIntro, ModeNotice, ModeTopBar, OptionPill, TopBarLink } from "@/components/study/mode-shell";
+import { cn } from "@/lib/utils";
 import {
   cefrLevelSchema,
   splitHighlightedContent,
@@ -23,7 +24,6 @@ export interface ReadingPassageData {
 }
 
 const LEVELS = cefrLevelSchema.options;
-const panel = "space-y-4 rounded-3xl border-2 bg-card p-5 shadow-[0_4px_0_var(--border)]";
 
 async function requestPassage(setId: string, level: CefrLevel, fresh: boolean): Promise<ReadingPassageData> {
   const response = await fetch("/api/ai/reading", {
@@ -86,68 +86,85 @@ export function ReadingPractice({
     }
   }, [setId]);
 
+  const levelPicker = (
+    <div role="radiogroup" aria-label="Trình độ" className="flex flex-wrap gap-2">
+      {LEVELS.map((item) => (
+        <OptionPill
+          key={item}
+          selected={level === item}
+          disabled={!!busy || !aiEnabled}
+          onClick={() => {
+            setLevel(item);
+            if (passage) void load(item, false);
+          }}
+        >
+          {item}
+        </OptionPill>
+      ))}
+    </div>
+  );
+  const answeredAll = passage ? Object.keys(answers).length >= passage.questions.length : false;
+
   return (
     <div className="mx-auto max-w-3xl space-y-6 pb-4">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-black">Đọc hiểu AI</h1>
-          <Link href={`/sets/${setId}`} className="text-sm font-bold underline">Về bộ từ: {title}</Link>
-        </div>
-        <Link href="/history" className={buttonVariants({ variant: "outline" })}>Lịch sử</Link>
-      </header>
+      <ModeTopBar setId={setId} title={title}>
+        <TopBarLink href="/history" icon={History}>Lịch sử</TopBarLink>
+      </ModeTopBar>
 
-      {!aiEnabled && <p role="status">AI chưa được bật. Bạn chưa thể tạo bài đọc mới.</p>}
+      {!aiEnabled ? <ModeNotice>AI chưa được bật. Bạn chưa thể tạo bài đọc mới.</ModeNotice> : null}
 
-      <section className={panel}>
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="space-y-2">
-            <label htmlFor="reading-level" className="block font-extrabold">Trình độ</label>
-            <Select
-              value={level}
-              disabled={!!busy || !aiEnabled}
-              onValueChange={(value) => {
-                const next = value as CefrLevel;
-                setLevel(next);
-                void load(next, false);
-              }}
-            >
-              <SelectTrigger id="reading-level" className="w-32"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {LEVELS.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}
-              </SelectContent>
-            </Select>
+      {!passage ? (
+        <ModeIntro
+          icon={BookOpenText}
+          tone="bg-brand-grape/15 text-brand-grape"
+          title="Đọc hiểu AI"
+          description="AI viết một bài đọc ngắn dùng chính các từ trong bộ, kèm câu hỏi đọc hiểu. Bấm vào từ được tô sáng để xem nghĩa."
+          footer={
+            <>
+              <p className="text-muted-foreground text-sm font-bold">Bài đọc mất khoảng 10 giây để tạo.</p>
+              <Button type="button" size="lg" className="h-14 px-10 text-base" disabled={!!busy || !aiEnabled} onClick={() => void load(level, true)}>
+                {busy ? "Đang viết bài đọc..." : <><Sparkles aria-hidden="true" /> Tạo bài đọc</>}
+              </Button>
+            </>
+          }
+        >
+          <div>
+            <p className="mb-2 font-extrabold">Trình độ</p>
+            {levelPicker}
           </div>
-          <Button
-            type="button"
-            disabled={!!busy || !aiEnabled}
-            onClick={() => void load(level, true)}
-          >
-            {passage ? "Bài đọc mới" : "Tạo bài đọc"}
+        </ModeIntro>
+      ) : (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {levelPicker}
+          <Button type="button" variant="outline" disabled={!!busy || !aiEnabled} onClick={() => void load(level, true)}>
+            <RefreshCw aria-hidden="true" /> Bài đọc mới
           </Button>
         </div>
-        {busy && <LogoLoader size="sm" label={busy === "fresh" ? "Đang viết bài đọc mới" : "Đang tải bài đọc"} />}
-      </section>
+      )}
 
-      {error && <p role="alert" className="text-sm font-bold text-destructive">{error}</p>}
+      {busy && passage ? <LogoLoader size="sm" label={busy === "fresh" ? "Đang viết bài đọc mới" : "Đang tải bài đọc"} /> : null}
+      {error ? <p role="alert" className="text-destructive font-bold">{error}</p> : null}
 
-      {passage && (
+      {passage && !busy ? (
         <>
-          <section className={panel} aria-label="Bài đọc">
-            <p className="text-sm text-muted-foreground">
-              Trình độ {passage.level}. Bấm vào từ được tô sáng để xem nghĩa.
-            </p>
-            <div lang="en" className="text-lg leading-8">
+          <ModeCard aria-label="Bài đọc" className="space-y-5">
+            <div className="flex items-center justify-between gap-3">
+              <span className="bg-brand-grape/15 text-brand-grape rounded-full px-3 py-1 text-xs font-extrabold uppercase">Bài đọc · {passage.level}</span>
+              <button type="button" onClick={() => void playTts(passage.content)} className="text-secondary flex items-center gap-1.5 text-sm font-extrabold">
+                <Volume2 className="size-4" aria-hidden="true" /> Nghe cả bài
+              </button>
+            </div>
+            <div lang="en" className="text-xl leading-9 font-medium">
               {segments.map((segment, index) =>
                 segment.term ? (
                   <button
                     key={index}
                     type="button"
                     onClick={() => setActiveTerm(segment.term)}
-                    className={`mx-0.5 rounded-lg px-1 font-bold underline decoration-dotted underline-offset-4 ${
-                      activeTerm?.term === segment.term.term
-                        ? "bg-accent text-accent-foreground"
-                        : "bg-primary/15 hover:bg-primary/25"
-                    }`}
+                    className={cn(
+                      "rounded-lg px-1 font-extrabold underline decoration-2 decoration-dotted underline-offset-4 transition-colors",
+                      activeTerm?.term === segment.term.term ? "bg-accent text-accent-foreground" : "bg-primary/15 text-primary-edge hover:bg-primary/25",
+                    )}
                   >
                     {segment.text}
                   </button>
@@ -156,80 +173,86 @@ export function ReadingPractice({
                 ),
               )}
             </div>
-            {activeTerm && (
-              <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-muted p-4">
-                <p className="font-extrabold">
-                  <span lang="en">{activeTerm.term}</span>
-                  {activeTerm.definition_vi && <span className="ml-2 font-bold text-muted-foreground">{activeTerm.definition_vi}</span>}
+            {activeTerm ? (
+              <div className="bg-muted/70 sticky bottom-4 flex items-center gap-3 rounded-2xl border-2 p-4 animate-[study-rise_0.2s_ease-out]">
+                <button type="button" onClick={() => void playTts(activeTerm.term)} aria-label={`Nghe ${activeTerm.term}`} className="bg-secondary text-secondary-foreground grid size-11 shrink-0 place-items-center rounded-full shadow-[0_3px_0_var(--secondary-edge)]">
+                  <Volume2 className="size-5" aria-hidden="true" />
+                </button>
+                <p className="min-w-0 flex-1">
+                  <span lang="en" className="block text-lg font-black">{activeTerm.term}</span>
+                  {activeTerm.definition_vi ? <span className="text-muted-foreground font-semibold">{activeTerm.definition_vi}</span> : null}
                 </p>
-                <Button type="button" size="sm" variant="outline" onClick={() => void playTts(activeTerm.term)}>
-                  Nghe từ
-                </Button>
-                <Button type="button" size="sm" variant="ghost" onClick={() => setActiveTerm(null)}>
-                  Đóng
+                <button type="button" onClick={() => setActiveTerm(null)} aria-label="Đóng" className="text-muted-foreground hover:bg-card grid size-9 place-items-center rounded-xl">
+                  <X className="size-5" aria-hidden="true" />
+                </button>
+              </div>
+            ) : null}
+          </ModeCard>
+
+          <section aria-label="Câu hỏi đọc hiểu" className="space-y-4">
+            <h2 className="text-2xl font-black">Câu hỏi</h2>
+            {passage.questions.map((question, qIndex) => (
+              <ModeCard key={qIndex} className="space-y-4 p-5 sm:p-6">
+                <p className="text-lg font-black"><span className="text-muted-foreground mr-2">{qIndex + 1}.</span>{question.question}</p>
+                <div className="grid gap-2">
+                  {question.options.map((option, oIndex) => {
+                    const chosen = answers[qIndex] === oIndex;
+                    const isAnswer = question.answer_index === oIndex;
+                    const state = !checked ? (chosen ? "chosen" : "idle") : isAnswer ? "correct" : chosen ? "wrong" : "dim";
+                    return (
+                      <button
+                        key={oIndex}
+                        type="button"
+                        disabled={checked}
+                        aria-pressed={chosen}
+                        onClick={() => setAnswers((prev) => ({ ...prev, [qIndex]: oIndex }))}
+                        className={cn(
+                          "flex items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left font-bold transition-colors",
+                          state === "idle" && "hover:bg-muted",
+                          state === "chosen" && "border-secondary bg-secondary/10",
+                          state === "correct" && "border-primary bg-primary/12 text-primary-edge",
+                          state === "wrong" && "border-destructive bg-destructive/10 text-destructive",
+                          state === "dim" && "opacity-50",
+                        )}
+                      >
+                        <span className={cn(
+                          "grid size-8 shrink-0 place-items-center rounded-xl border-2 text-sm font-black",
+                          state === "chosen" && "border-secondary bg-secondary text-white",
+                          state === "correct" && "border-primary bg-primary text-white",
+                          state === "wrong" && "border-destructive bg-destructive text-white",
+                        )}>
+                          {state === "correct" ? <Check className="size-4" aria-hidden="true" /> : state === "wrong" ? <X className="size-4" aria-hidden="true" /> : String.fromCharCode(65 + oIndex)}
+                        </span>
+                        <span className="min-w-0 flex-1">{option}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {checked ? <p className="bg-muted/60 text-muted-foreground rounded-2xl px-4 py-3 font-semibold">{question.explanation}</p> : null}
+              </ModeCard>
+            ))}
+
+            {!checked ? (
+              <Button type="button" size="lg" className="h-14 w-full text-base" disabled={!answeredAll} onClick={() => setChecked(true)}>
+                {answeredAll ? "Kiểm tra đáp án" : `Trả lời đủ ${passage.questions.length} câu để kiểm tra`}
+              </Button>
+            ) : (
+              <div role="status" className="bg-primary/10 flex flex-col items-center gap-4 rounded-[2rem] border-2 border-primary/30 p-6 text-center sm:flex-row sm:text-left">
+                <span className="bg-primary grid size-16 shrink-0 place-items-center rounded-2xl text-2xl font-black text-white shadow-[0_4px_0_var(--primary-edge)]">
+                  {score}/{passage.questions.length}
+                </span>
+                <div className="flex-1">
+                  <p className="text-xl font-black">{score === passage.questions.length ? "Hiểu trọn bài đọc!" : "Xem lại giải thích để hiểu rõ hơn."}</p>
+                  <p className="text-muted-foreground font-semibold">Đúng {score} trên {passage.questions.length} câu.</p>
+                </div>
+                <Button type="button" size="lg" disabled={!!busy || !aiEnabled} onClick={() => void load(level, true)}>
+                  Bài đọc mới <ArrowRight aria-hidden="true" />
                 </Button>
               </div>
             )}
           </section>
-
-          <section className={panel} aria-label="Câu hỏi đọc hiểu">
-            <h2 className="text-xl font-extrabold">Câu hỏi đọc hiểu</h2>
-            <ol className="space-y-5">
-              {passage.questions.map((question, qIndex) => (
-                <li key={qIndex} className="space-y-2 border-t pt-4 first:border-t-0 first:pt-0">
-                  <p className="font-bold">{qIndex + 1}. {question.question}</p>
-                  <div className="grid gap-2">
-                    {question.options.map((option, oIndex) => {
-                      const chosen = answers[qIndex] === oIndex;
-                      const isAnswer = question.answer_index === oIndex;
-                      const showResult = checked;
-                      return (
-                        <button
-                          key={oIndex}
-                          type="button"
-                          disabled={checked}
-                          onClick={() => setAnswers((prev) => ({ ...prev, [qIndex]: oIndex }))}
-                          className={`rounded-2xl border-2 px-4 py-2 text-left font-bold ${
-                            showResult && isAnswer
-                              ? "border-primary bg-primary/15"
-                              : showResult && chosen
-                                ? "border-destructive bg-destructive/10"
-                                : chosen
-                                  ? "border-primary bg-primary/10"
-                                  : "hover:border-primary/60"
-                          }`}
-                        >
-                          {option}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {checked && (
-                    <p className="text-sm text-muted-foreground">{question.explanation}</p>
-                  )}
-                </li>
-              ))}
-            </ol>
-            {!checked ? (
-              <Button
-                type="button"
-                disabled={Object.keys(answers).length < passage.questions.length}
-                onClick={() => setChecked(true)}
-              >
-                Kiểm tra đáp án
-              </Button>
-            ) : (
-              <p className="text-lg font-extrabold" role="status">
-                Đúng {score}/{passage.questions.length} câu.
-              </p>
-            )}
-          </section>
         </>
-      )}
-
-      {!passage && !busy && aiEnabled && (
-        <p className="text-muted-foreground">Chọn trình độ rồi bấm “Tạo bài đọc” để bắt đầu.</p>
-      )}
+      ) : null}
     </div>
   );
 }

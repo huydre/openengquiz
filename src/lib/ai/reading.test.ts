@@ -46,6 +46,16 @@ describe("checkTargetTerms", () => {
     expect(missing).toHaveLength(0);
   });
 
+  it("matches phrase terms that end in punctuation the passage may not repeat", () => {
+    const content = "Mia smiled. Do you want to play? Then she said, let's play a game while we wait.";
+    const { matched, missing } = checkTargetTerms(content, [
+      { term: "do you want to play?", definition_vi: "bạn có muốn chơi không?" },
+      { term: "let's play a game!", definition_vi: "cùng chơi một trò nhé!" },
+    ]);
+    expect(matched.map((term) => term.term)).toEqual(["do you want to play?", "let's play a game!"]);
+    expect(missing).toEqual([]);
+  });
+
   it("skips empty terms", () => {
     const { matched, missing } = checkTargetTerms("hello", [{ term: "  ", definition_vi: null }]);
     expect(matched).toEqual([]);
