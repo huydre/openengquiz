@@ -25,7 +25,8 @@ export function FlipFlashcard({ card, flipped, onFlip, accent = "en-US", autoPla
     if (autoPlay) void playTts(card.term, { accent });
   }, [card.term, accent, autoPlay]);
 
-  const face = "absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-3xl border-2 p-6 text-center [backface-visibility:hidden]";
+  const face = "absolute inset-0 flex flex-col items-center justify-center gap-3 overflow-y-auto rounded-3xl border-2 p-6 text-center [backface-visibility:hidden]";
+  const meaning = card.definition_vi ?? card.definition_en ?? "Chưa có nghĩa";
   const turn = { duration: reduceMotion ? 0 : 0.5, ease: [0.2, 0.8, 0.2, 1] as const };
 
   function speak(event: React.MouseEvent, text: string) {
@@ -74,7 +75,7 @@ export function FlipFlashcard({ card, flipped, onFlip, accent = "en-US", autoPla
 
         {/* Back */}
         <div className={`${face} border-primary/40 bg-sidebar-accent shadow-[0_6px_0_var(--primary-edge)] [transform:rotateY(180deg)]`}>
-          <p className="text-3xl font-black">{card.definition_vi ?? card.definition_en ?? "Chưa có nghĩa"}</p>
+          <p className={meaning.length > 40 ? "text-xl font-black sm:text-2xl" : "text-3xl font-black"}>{meaning}</p>
           {card.definition_vi && card.definition_en ? (
             <p lang="en" className="text-muted-foreground text-sm">{card.definition_en}</p>
           ) : null}

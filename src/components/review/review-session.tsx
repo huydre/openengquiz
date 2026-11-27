@@ -65,7 +65,7 @@ export function ReviewSession({ items, newRemaining }: {
       const target = event.target as HTMLElement;
       if (event.altKey || event.ctrlKey || event.metaKey || event.repeat) return;
       if (target.closest("input, textarea, select, [contenteditable='true']")) return;
-      if (event.code === "Space" && !target.closest("button, a")) {
+      if (event.code === "Space" && !target.closest("button, a, [role=button]")) {
         event.preventDefault();
         if (item) setFlipped((previous) => !previous);
       }

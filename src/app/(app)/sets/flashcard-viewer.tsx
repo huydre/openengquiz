@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
+import { FlipFlashcard } from "@/components/vocab/flip-flashcard";
 import type { CardRecord } from "./card-record";
 import { playTts } from "@/lib/speech/play-tts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -30,6 +31,11 @@ export function FlashcardViewer({ setId, userId, cards }: { setId: string; userI
     function onKeyDown(event: KeyboardEvent) {
       const target = event.target as HTMLElement;
       if (target.closest("input, textarea, select, [contenteditable='true']")) return;
+      // Space flips from anywhere on the page; the card itself handles Space when focused.
+      if (event.code === "Space" && !target.closest("button, a, [role=button]")) {
+        event.preventDefault();
+        setFlipped((old) => !old);
+      }
       if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
         event.preventDefault();
         const delta = event.key === "ArrowRight" ? 1 : -1;
@@ -72,30 +78,7 @@ export function FlashcardViewer({ setId, userId, cards }: { setId: string; userI
   return (
     <section className="space-y-4" aria-label="Học flashcard">
       <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-xl font-extrabold">Học thẻ</h2><span role="status" aria-live="polite" className="font-bold">{index + 1}/{order.length} {flipped ? "Mặt sau" : "Mặt trước"}</span></div>
-      <button type="button" onClick={() => setFlipped((old) => !old)} aria-pressed={flipped} className="focus-visible:ring-primary flex min-h-64 w-full flex-col items-center justify-center gap-4 rounded-3xl border-2 bg-card p-8 text-center shadow-[0_4px_0_var(--border)] outline-none focus-visible:ring-4 motion-safe:transition-transform motion-safe:duration-200">
-        <span className="text-muted-foreground text-sm font-bold uppercase">{flipped ? "Nghĩa" : "Từ"}</span>
-        <span className="text-3xl font-black">{flipped ? card.definition_vi || card.definition_en || "Chưa có nghĩa" : card.term}</span>
-        {!flipped && (card.ipa || card.part_of_speech) ? (
-          <span className="text-muted-foreground text-base">
-            {[card.ipa, card.part_of_speech].filter(Boolean).join(" · ")}
-          </span>
-        ) : null}
-        {flipped && card.definition_vi && card.definition_en ? (
-          <span lang="en" className="text-muted-foreground text-sm">{card.definition_en}</span>
-        ) : null}
-        {flipped && card.example_en ? (
-          <span className="space-y-0.5 text-sm">
-            <span lang="en" className="block font-semibold">{card.example_en}</span>
-            {card.example_vi ? <span className="text-muted-foreground block">{card.example_vi}</span> : null}
-          </span>
-        ) : null}
-        {flipped && card.synonyms?.length ? (
-          <span className="text-muted-foreground text-sm">
-            Đồng nghĩa: <span lang="en" className="font-bold">{card.synonyms.slice(0, 5).join(", ")}</span>
-          </span>
-        ) : null}
-        <span className="text-muted-foreground text-xs">Chạm hoặc nhấn Space để lật</span>
-      </button>
+      <FlipFlashcard key={card.id} card={card} flipped={flipped} onFlip={() => setFlipped((old) => !old)} accent={voice} />
       <div className="flex flex-wrap items-center gap-2">
         <Button variant="outline" disabled={index === 0} onClick={() => move(-1)}>← Trước</Button>
         <Button variant="outline" disabled={index === order.length - 1} onClick={() => move(1)}>Tiếp →</Button>
