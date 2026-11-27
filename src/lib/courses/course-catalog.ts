@@ -3,7 +3,13 @@ import { z } from "zod";
 
 const slug = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/);
 const text = z.string().trim().min(1).max(400);
-export const courseIcons = ["sun", "users", "home", "cup", "map", "spark", "book"] as const;
+export const courseIcons = [
+  "alarm-clock", "bed", "book-open", "briefcase", "bus", "calendar", "camera", "clock", "cloud-rain", "coffee",
+  "dumbbell", "film", "graduation-cap", "heart-pulse", "home", "key", "landmark", "laptop", "leaf", "map-pin",
+  "message-circle", "music", "newspaper", "palette", "plane", "scale", "shield", "shopping-bag", "sparkles", "sun",
+  "users", "utensils", "wallet",
+] as const;
+export type CourseIcon = (typeof courseIcons)[number];
 const schema = z.object({
   slug, goal: z.enum(["ielts", "toeic", "communication", "thpt", "work"]), title: text,
   levels: z.array(z.object({
