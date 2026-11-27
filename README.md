@@ -30,7 +30,7 @@ Tạo thẻ AI giới hạn 50 thẻ mỗi lượt và 50 lượt mỗi ngày. T
 
 `SPEECH_SERVICE_URL`, `SPEECH_SERVICE_TOKEN` (server-only): dịch vụ giọng nói tự host, xem mục dưới.
 
-`GROQ_API_KEY` (tùy chọn, chỉ dùng ở server): dùng Groq Whisper để chép câu trả lời khi luyện nói. Thiếu khóa thì dùng nhận dạng giọng nói của trình duyệt nếu có, hoặc nhập văn bản bằng tay. Không cần DeepSeek để chấm phát âm; thiếu cấu hình DeepSeek thì không có phản hồi ngữ pháp AI.
+`GROQ_API_KEY` (khuyến nghị, chỉ dùng ở server): chép câu trả lời nói bằng Groq Whisper (gói miễn phí). Thiếu khoá, hết hạn mức hoặc lỗi thì tự chuyển sang Whisper `base.en` trên dịch vụ giọng nói (`/transcribe`, chậm và kém chính xác hơn với giọng nặng). Người học luôn xem và sửa được bản chép trước khi gửi. Không cần DeepSeek để chấm phát âm; thiếu cấu hình DeepSeek thì không có phản hồi ngữ pháp AI.
 
 ## Dịch vụ giọng nói (`services/speech/`)
 
@@ -40,6 +40,7 @@ Thay Azure Speech bằng mã nguồn mở, chạy Docker trên VPS. Lý do chọ
 |---|---|
 | `GET /health` | Kiểm tra sống |
 | `POST /assess` (multipart `audio`, `text`, `strictness`) | Chấm phát âm theo câu mẫu (Pronunciada): điểm câu, accuracy, fluency, completeness, điểm từng từ/âm, danh sách lỗi `issues` |
+| `POST /transcribe` (multipart `audio`) | Chép lời tiếng Anh (faster-whisper `base.en`), dự phòng khi không dùng được Groq |
 | `POST /tts` (JSON `text`, `voice`, `speed`) | Đọc chữ thành MP3 (Kokoro; giọng `af_*`/`am_*` Mỹ, `bf_*`/`bm_*` Anh) |
 
 Mọi endpoint trừ `/health` cần `Authorization: Bearer <SPEECH_API_TOKEN>`. Audio không được lưu. Container giới hạn 3 CPU, 2 GB RAM, tối đa 2 tác vụ cùng lúc (VPS dùng chung với app khác).
