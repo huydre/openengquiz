@@ -6,13 +6,17 @@ export type MediaImage = { thumb: string; url: string; title: string };
 const openverseSchema = z.object({
   results: z.array(z.object({ url: z.string(), thumbnail: z.string().nullable().optional(), title: z.string().nullable().optional() })),
 });
+const pixabaySchema = z.object({
+  hits: z.array(z.object({ tags: z.string().optional(), webformatURL: z.string(), largeImageURL: z.string() })),
+});
 const pexelsSchema = z.object({
   photos: z.array(z.object({ alt: z.string().nullable().optional(), src: z.object({ medium: z.string(), large: z.string() }) })),
 });
 
 /**
- * Illustration search for cards. Uses Pexels when PEXELS_API_KEY is set, otherwise Openverse
- * (openly licensed images, no key). Mature results are excluded on both.
+ * Illustration search for cards: Pixabay when PIXABAY_API_KEY is set (fast, free key), else Pexels
+ * when PEXELS_API_KEY is set, else Openverse (openly licensed images, no key, slower). Mature
+ * results are excluded on every provider.
  */
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -24,9 +28,15 @@ export async function GET(request: Request) {
   const signal = AbortSignal.timeout(12_000);
 
   try {
+    const pixabayKey = process.env.PIXABAY_API_KEY;
     const pexelsKey = process.env.PEXELS_API_KEY;
     let images: MediaImage[];
-    if (pexelsKey) {
+    if (pixabayKey) {
+      const params = new URLSearchParams({ key: pixabayKey, q: query, image_type: "photo", safesearch: "true", per_page: "12" });
+      const response = await fetch(`https://pixabay.com/api/?${params}`, { signal, next: { revalidate: 86_400 } });
+      if (!response.ok) throw new Error(`Pixabay ${response.status}`);
+      images = pixabaySchema.parse(await response.json()).hits.map((hit) => ({ thumb: hit.webformatURL, url: hit.largeImageURL, title: hit.tags || query }));
+    } else if (pexelsKey) {
       const response = await fetch(`https://api.pexels.com/v1/search?per_page=12&query=${encodeURIComponent(query)}`, {
         headers: { authorization: pexelsKey }, signal, next: { revalidate: 86_400 },
       });

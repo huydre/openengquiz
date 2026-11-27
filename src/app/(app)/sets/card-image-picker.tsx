@@ -152,7 +152,7 @@ export function CardImagePicker({ setId, card, open, onOpenChange }: {
           ) : null}
           {saving ? <LogoLoader size="sm" label="Đang lưu..." /> : null}
         </div>
-        <p className="text-muted-foreground text-xs">Ảnh tìm từ Openverse (giấy phép mở). Ảnh tải lên tối đa 2 MB.</p>
+        <p className="text-muted-foreground text-xs">Ảnh từ kho ảnh miễn phí (Pixabay hoặc Openverse). Ảnh tải lên tối đa 2 MB.</p>
       </DialogContent>
     </Dialog>
   );
