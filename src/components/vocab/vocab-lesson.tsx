@@ -21,6 +21,7 @@ export type LessonCard = {
   example_en: string | null;
   example_vi: string | null;
   synonyms: string[] | null;
+  image_url?: string | null;
 };
 
 type Step = "learn" | "word" | "example";

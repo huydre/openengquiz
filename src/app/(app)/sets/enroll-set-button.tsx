@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CalendarPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { enrollSetCards } from "./review-actions";
 
@@ -22,9 +23,11 @@ export function EnrollSetButton({ setId }: { setId: string }) {
   }
 
   return (
-    <div>
-      <Button onClick={enroll} disabled={pending}>{pending ? "Đang thêm..." : "Thêm vào ôn tập"}</Button>
-      {notice ? <p role="status" className="mt-2 text-sm">{notice}</p> : null}
+    <div className="relative">
+      <Button size="lg" variant="outline" onClick={enroll} disabled={pending}>
+        <CalendarPlus aria-hidden="true" /> {pending ? "Đang thêm..." : "Thêm vào ôn tập"}
+      </Button>
+      {notice ? <p role="status" className="text-primary-edge absolute top-full left-0 mt-2 w-max max-w-64 text-xs font-bold">{notice}</p> : null}
     </div>
   );
 }

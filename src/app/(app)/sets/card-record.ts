@@ -9,4 +9,5 @@ export type CardRecord = {
   example_en: string | null;
   example_vi: string | null;
   synonyms: string[];
+  image_url?: string | null;
 };

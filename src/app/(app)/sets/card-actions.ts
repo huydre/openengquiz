@@ -138,3 +138,18 @@ export async function bulkAddCards(setId: string, cards: CardInput[]): Promise<R
   revalidatePath(`/sets/${setId}`);
   return {};
 }
+
+const imageUrlSchema = z.url({ protocol: /^https$/ }).max(1000).nullable();
+
+/** Sets (or clears, with null) the illustration of one card in the learner's own set. */
+export async function setCardImage(setId: string, cardId: string, imageUrl: string | null): Promise<Result> {
+  const parsed = imageUrlSchema.safeParse(imageUrl);
+  if (!parsed.success) return { error: "Link ảnh không hợp lệ." };
+  const supabase = await ownedSet(setId);
+  if (!supabase) return { error: "Bạn không có quyền sửa bộ từ này." };
+  const { data, error } = await supabase.from("cards").update({ image_url: parsed.data })
+    .eq("id", cardId).eq("set_id", setId).select("id").maybeSingle();
+  if (error || !data) return { error: "Không lưu được ảnh." };
+  revalidatePath(`/sets/${setId}`);
+  return {};
+}

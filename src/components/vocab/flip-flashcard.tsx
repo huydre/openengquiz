@@ -59,7 +59,12 @@ export function FlipFlashcard({ card, flipped, onFlip, accent = "en-US", autoPla
           {card.part_of_speech ? (
             <span className="bg-secondary/10 text-secondary rounded-full px-3 py-1 text-xs font-extrabold">{card.part_of_speech}</span>
           ) : null}
-          <p lang="en" className="text-5xl font-black break-words">{card.term}</p>
+          {card.image_url ? (
+            // Learner-chosen illustration (remote or uploaded); a plain img avoids allow-listing every host.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={card.image_url} alt="" className="h-24 w-32 rounded-2xl object-cover shadow-sm" />
+          ) : null}
+          <p lang="en" className={card.image_url ? "text-4xl font-black break-words" : "text-5xl font-black break-words"}>{card.term}</p>
           {card.ipa ? <p className="text-muted-foreground text-lg"><Ipa value={card.ipa} /></p> : null}
           <button
             type="button"
