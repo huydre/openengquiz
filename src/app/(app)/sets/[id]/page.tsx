@@ -13,6 +13,7 @@ import type { CardRecord } from "../card-record";
 import { LogoLoader } from "@/components/layout/logo-loader";
 
 const studyModes = [
+  { slug: "vocab", label: "Học từ mới" },
   { slug: "learn", label: "Học từng bước" },
   { slug: "quiz", label: "Trắc nghiệm" },
   { slug: "dictation", label: "Nghe chép" },

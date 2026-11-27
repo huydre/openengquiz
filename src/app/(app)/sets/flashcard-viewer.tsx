@@ -75,7 +75,25 @@ export function FlashcardViewer({ setId, userId, cards }: { setId: string; userI
       <button type="button" onClick={() => setFlipped((old) => !old)} aria-pressed={flipped} className="focus-visible:ring-primary flex min-h-64 w-full flex-col items-center justify-center gap-4 rounded-3xl border-2 bg-card p-8 text-center shadow-[0_4px_0_var(--border)] outline-none focus-visible:ring-4 motion-safe:transition-transform motion-safe:duration-200">
         <span className="text-muted-foreground text-sm font-bold uppercase">{flipped ? "Nghĩa" : "Từ"}</span>
         <span className="text-3xl font-black">{flipped ? card.definition_vi || card.definition_en || "Chưa có nghĩa" : card.term}</span>
-        {flipped && card.example_en ? <span className="text-muted-foreground text-sm">{card.example_en}</span> : null}
+        {!flipped && (card.ipa || card.part_of_speech) ? (
+          <span className="text-muted-foreground text-base">
+            {[card.ipa, card.part_of_speech].filter(Boolean).join(" · ")}
+          </span>
+        ) : null}
+        {flipped && card.definition_vi && card.definition_en ? (
+          <span lang="en" className="text-muted-foreground text-sm">{card.definition_en}</span>
+        ) : null}
+        {flipped && card.example_en ? (
+          <span className="space-y-0.5 text-sm">
+            <span lang="en" className="block font-semibold">{card.example_en}</span>
+            {card.example_vi ? <span className="text-muted-foreground block">{card.example_vi}</span> : null}
+          </span>
+        ) : null}
+        {flipped && card.synonyms?.length ? (
+          <span className="text-muted-foreground text-sm">
+            Đồng nghĩa: <span lang="en" className="font-bold">{card.synonyms.slice(0, 5).join(", ")}</span>
+          </span>
+        ) : null}
         <span className="text-muted-foreground text-xs">Chạm hoặc nhấn Space để lật</span>
       </button>
       <div className="flex flex-wrap items-center gap-2">

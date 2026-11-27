@@ -11,7 +11,8 @@ export const AI_DAILY_LIMITS = {
   reading: 30,
   conversation: 50,
   speaking: 30,
-  pronunciation: 30,
+  // Self-hosted Pronunciada (~0.6 s CPU per check); a vocabulary lesson reads each word and its example.
+  pronunciation: 300,
   // Kokoro TTS on our VPS; only cache misses count, cached audio is free.
   tts: 500,
 } as const;
