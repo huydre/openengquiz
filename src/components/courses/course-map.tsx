@@ -308,12 +308,14 @@ function LessonTrail({ course, lessons, completed, next, colorOffset, waveOffset
             </span>
             <span className="min-w-0 flex-1">
               <span lang="en" className={cn("line-clamp-2 block leading-tight font-extrabold", locked && "text-muted-foreground")}>{lesson.title}</span>
-              <span className="text-muted-foreground block text-xs font-bold">{status}{content.success && ` · ${doneCount}/7`}</span>
+              <span className="text-muted-foreground block text-xs font-bold">
+                {content.success && active && doneCount > 0 ? `${doneCount}/7 hoạt động` : status}
+              </span>
             </span>
             {locked ? <Lock aria-hidden="true" className="text-muted-foreground size-4 shrink-0" /> : null}
             {active ? (
               <span className="bg-primary text-primary-foreground hidden rounded-full px-2.5 py-1 text-[10px] font-black uppercase sm:inline">
-                {completed.length ? "Tiếp" : "Bắt đầu"}
+                {completed.length || doneCount ? "Tiếp" : "Bắt đầu"}
               </span>
             ) : null}
           </>

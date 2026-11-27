@@ -15,19 +15,33 @@ import { CallHelp, CallWords, EvaluateCallReply } from "./call-message-tools";
 import { CallOrb, type CallOrbMode } from "./call-orb";
 import { useCallSession, type CallSessionOptions } from "./use-call-session";
 
-export type CallSessionProps = CallSessionOptions & { setTitle: string; warning?: string | null };
+export type CallSessionProps = CallSessionOptions & {
+  setTitle: string;
+  warning?: string | null;
+  /** Start the call on mount (the caller already showed its own start screen). */
+  autoStart?: boolean;
+};
 
 /**
  * AI Call screen. Defaults to a hands-free phone call (large tutor, hidden text, help panel);
  * chat mode is optional. All call orchestration lives in useCallSession.
  */
 export function CallSession(props: CallSessionProps) {
-  const { setId, setTitle, scenarios, aiEnabled, cardCount, maxTurns, warning, onComplete } = props;
+  const { setId, setTitle, scenarios, aiEnabled, cardCount, maxTurns, warning, onComplete, autoStart } = props;
   const call = useCallSession(props);
   const { assistant, assistantIndex, busy, summary, view } = call;
   const inLesson = Boolean(onComplete);
 
-  // Enter = talk / interrupt / stop and send, unless the learner is typing or using a control.
+  // Lessons show their own start screen; begin the call right away (once) when asked to.
+  const autoStarted = useRef(false);
+  useEffect(() => {
+    if (!autoStart || autoStarted.current || call.assistant || call.threadId) return;
+    autoStarted.current = true;
+    call.changeView("call");
+    void call.startCall();
+  }, [autoStart, call]);
+
+    // Enter = talk / interrupt / stop and send, unless the learner is typing or using a control.
   useEffect(() => {
     function shortcut(event: KeyboardEvent) {
       if (event.key !== "Enter" || event.repeat || event.defaultPrevented || event.altKey || event.metaKey || event.ctrlKey || event.shiftKey) return;

@@ -1,8 +1,9 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, Check, ChevronDown, Mic, Trophy } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ChevronDown, Phone, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
+import { CallOrb } from "@/app/(app)/study/[setId]/call/call-orb";
 import { CallSession } from "@/app/(app)/study/[setId]/call/call-session";
 import { LogoLoader } from "@/components/layout/logo-loader";
 import { TutorNarration } from "@/components/tutor/tutor-narration";
@@ -262,18 +263,18 @@ export function CourseActivityLesson(props: CourseActivityLessonProps) {
     const scenarioLabel = content.conversation || lesson.warmup_question;
     const canResume = callPhase === "ready" || (callLaunched && call != null);
     if (!canResume) {
+      const starting = callPhase === "starting";
       return (
-        <section className="space-y-4 rounded-3xl border-2 bg-card p-6">
-          <h2 className="text-xl font-black">{descriptor.titleVi}</h2>
-          <p className="text-muted-foreground">{scenarioLabel}</p>
-          <Button
-            type="button"
-            disabled={busy || !ai || callPhase === "starting"}
-            onClick={() => void startCall()}
-          >
-            <Mic aria-hidden="true" /> {callPhase === "starting" ? "Đang mở" : "Bắt đầu hội thoại"}
+        <section className="from-sidebar-accent/70 to-card flex flex-col items-center gap-5 rounded-3xl border-2 bg-gradient-to-b p-8 text-center">
+          <CallOrb mode={starting ? "thinking" : "idle"} level={0} onTap={() => void startCall()} disabled={busy || !ai || starting} label="Bắt đầu cuộc gọi" />
+          <div className="space-y-1">
+            <h2 className="text-2xl font-black">{starting ? "Đang kết nối với gia sư..." : "Gọi điện với gia sư"}</h2>
+            <p className="text-muted-foreground mx-auto max-w-md font-semibold">{scenarioLabel}</p>
+          </div>
+          <Button type="button" size="lg" disabled={busy || !ai || starting} onClick={() => void startCall()}>
+            <Phone aria-hidden="true" /> Bắt đầu cuộc gọi
           </Button>
-          {!ai && <p className="text-sm text-muted-foreground">AI chưa được bật.</p>}
+          {!ai ? <p className="text-muted-foreground text-sm">AI chưa được bật.</p> : null}
         </section>
       );
     }
@@ -289,6 +290,7 @@ export function CourseActivityLesson(props: CourseActivityLessonProps) {
         maxTurns={COURSE_CALL_TURNS}
         cardCount={cards.length}
         resume={resume}
+        autoStart={callPhase === "ready" && !resume}
         onComplete={async (threadId) => { await completeActivity(selected, 1, threadId); }}
       />
     );
