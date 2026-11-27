@@ -108,14 +108,15 @@ export async function synthesizeSpeech(
   text: string,
   voice: TtsVoice = "af_heart",
   speed = 1,
+  engine: "auto" | "kokoro" = "auto",
 ): Promise<{ audio: ArrayBuffer; engine: TtsEngine }> {
   const response = await call("/tts", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ text, voice, speed }),
+    body: JSON.stringify({ text, voice, speed, engine }),
   });
-  const engine: TtsEngine = response.headers.get("x-tts-engine") === "openai-fm" ? "openai-fm" : "kokoro";
-  return { audio: await response.arrayBuffer(), engine };
+  const used: TtsEngine = response.headers.get("x-tts-engine") === "openai-fm" ? "openai-fm" : "kokoro";
+  return { audio: await response.arrayBuffer(), engine: used };
 }
 
 /** English speech to text on the self-hosted service (faster-whisper). Null when unavailable. */

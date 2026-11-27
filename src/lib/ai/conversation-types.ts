@@ -29,6 +29,23 @@ export interface CallMessage {
   content: string;
 }
 
+/** One assistant reply plus per-turn vocabulary chips suggested for the learner. */
+export interface CallReply {
+  text: string;
+  /** Suggested terms copied from the set's card terms; may be empty. */
+  terms: string[];
+}
+
+/** Opening line of a call plus the first set of vocabulary chips. */
+export interface CallGreeting {
+  greeting: string;
+  /** Suggested terms copied from the set's card terms; may be empty. */
+  terms: string[];
+}
+
+export type CallAssistAction = "translate" | "hint" | "ideas" | "evaluate";
+export const CALL_ASSIST_ACTIONS: CallAssistAction[] = ["translate", "hint", "ideas", "evaluate"];
+
 const summarySchema = z.object({
   used_terms: z.array(z.string().trim().min(1).max(200)).max(60),
   unused_terms: z.array(z.string().trim().min(1).max(200)).max(60),

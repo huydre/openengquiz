@@ -154,6 +154,8 @@ class TtsRequest(BaseModel):
     text: str = Field(min_length=1, max_length=500)
     voice: str = "af_heart"
     speed: float = Field(1.0, ge=0.5, le=1.5)
+    # "kokoro" skips openai.fm for low-latency live speech.
+    engine: str = Field("auto", pattern="^(auto|kokoro)$")
 
 
 # Primary voices come from GPT-4o mini TTS through TTSFM (openai.fm); Kokoro is the fallback.
@@ -207,7 +209,7 @@ async def tts(body: TtsRequest) -> Response:
     if body.voice not in kokoro().get_voices():
         raise HTTPException(status_code=400, detail="unknown voice")
     # The engine header lets the app cache only primary-engine audio.
-    if TTSFM_ENABLED and body.voice in OPENAI_VOICES:
+    if TTSFM_ENABLED and body.engine == "auto" and body.voice in OPENAI_VOICES:
         try:
             audio = await asyncio.to_thread(openai_fm_speech, body.text, body.voice, body.speed)
             return Response(content=audio, media_type="audio/mpeg", headers={"x-tts-engine": "openai-fm"})

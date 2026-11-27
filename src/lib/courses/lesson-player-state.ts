@@ -96,7 +96,7 @@ export async function getLessonPlayerState(db: SupabaseClient, lessonId: string,
     // Latest course call thread for this lesson's set; finished flag comes from
     // the server-only course_finished_at marker.
     db.from("chat_threads")
-      .select("id,summary,course_finished_at,chat_messages(role,content)")
+      .select("id,summary,course_finished_at,chat_messages(role,content,suggested_terms)")
       .eq("set_id", lesson.set_id).eq("scenario", "course")
       .order("created_at", { ascending: false }).order("id", { ascending: false }).limit(1)
       .order("created_at", { referencedTable: "chat_messages" })
@@ -134,8 +134,12 @@ export async function getLessonPlayerState(db: SupabaseClient, lessonId: string,
   let call: LessonCallState | null = null;
   const threadRow = thread.data;
   if (threadRow && step === 7 && row?.calling && !complete) {
-    const messages = ((threadRow.chat_messages ?? []) as { role: string; content: string }[])
-      .map((m) => ({ role: m.role === "user" ? "user" as const : "assistant" as const, content: m.content }));
+    const messages = ((threadRow.chat_messages ?? []) as { role: string; content: string; suggested_terms?: string[] | null }[])
+      .map((m) => ({
+        role: m.role === "user" ? "user" as const : "assistant" as const,
+        content: m.content,
+        ...(m.role === "assistant" && m.suggested_terms?.length ? { terms: m.suggested_terms } : {}),
+      }));
     call = {
       threadId: threadRow.id,
       scenario: "course",

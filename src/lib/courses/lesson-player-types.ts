@@ -36,6 +36,9 @@ export interface LessonFeedback {
   example_vi: string;
   /** Phrases or lesson terms to highlight inside `example`. */
   highlights: string[];
+  /** Practice estimates, not official IELTS bands. */
+  ielts?: { overall: number; grammar: number; vocabulary: number; coherence: number };
+  upgrades?: string[];
   corrections: LessonCorrection[];
   /** Lesson terms detected in this transcript. */
   used: string[];
@@ -70,7 +73,7 @@ export interface LessonCallState {
   scenario: "course";
   /** True when the thread already has a summary (call ended, advance may be retried). */
   finished: boolean;
-  messages: { role: "user" | "assistant"; content: string }[];
+  messages: { role: "user" | "assistant"; content: string; terms?: string[] }[];
 }
 
 /** Everything the lesson player UI needs, loaded server-side. */

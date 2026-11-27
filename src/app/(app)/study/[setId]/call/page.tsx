@@ -22,8 +22,8 @@ async function Content({ params }: { params: Params }) {
     supabase.from("study_sets").select("id, title").eq("id", id.data).maybeSingle(),
     supabase.from("cards").select("id, term").eq("set_id", id.data).order("position").order("id"),
     // Resume the most recent unfinished call for this set, if any.
-    supabase.from("chat_threads").select("id, scenario, summary, chat_messages(id, role, content, created_at)")
-      .eq("set_id", id.data).is("summary", null)
+    supabase.from("chat_threads").select("id, scenario, summary, chat_messages(id, role, content, created_at, suggested_terms)")
+      .eq("set_id", id.data).is("summary", null).neq("scenario", "course")
       .order("created_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
   if (set.error || cards.error) throw new Error("Không tải được bộ từ.");
@@ -34,7 +34,11 @@ async function Content({ params }: { params: Params }) {
   const messages = (thread.data?.chat_messages ?? [])
     .slice()
     .sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id))
-    .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+    .map((m) => ({
+      role: m.role as "user" | "assistant",
+      content: m.content,
+      ...(m.role === "assistant" && m.suggested_terms?.length ? { terms: m.suggested_terms } : {}),
+    }));
   const scenario = callScenarioSchema.safeParse(thread.data?.scenario);
 
   return (
@@ -45,7 +49,7 @@ async function Content({ params }: { params: Params }) {
       scenarios={CALL_SCENARIOS.map((s) => ({ id: s.id, label: s.label }))}
       maxTurns={MAX_CALL_TURNS}
       cardCount={cards.data?.length ?? 0}
-      resume={thread.data && scenario.success && messages.length
+      resume={thread.data && scenario.success
         ? { threadId: thread.data.id, scenario: scenario.data, messages }
         : null}
       warning={threadWarning}

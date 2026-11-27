@@ -1,7 +1,8 @@
 "use client";
 
 /**
- * Plays natural pronunciation audio (Kokoro via GET /api/tts, cached in Storage). Falls back to the
+ * Plays natural pronunciation audio (GET /api/tts: openai.fm voices with Kokoro fallback, cached in
+ * Storage; `fast` goes straight to Kokoro for live calls where latency matters most). Falls back to the
  * browser's speechSynthesis when the service is unavailable or the user is signed out.
  * `playTts` fires and forgets; `playTtsTrack` returns a handle so callers (e.g. TutorNarration)
  * can await the outcome, pause, resume and stop.
@@ -26,8 +27,9 @@ let current: TtsPlayback | null = null;
  * Direct audio URL: the route answers with a redirect to the cached file or the fresh MP3,
  * so an <audio> element starts streaming without an extra JSON round trip.
  */
-export function ttsUrl(text: string, accent: TtsAccent = "en-US", speed = 1): string {
+export function ttsUrl(text: string, accent: TtsAccent = "en-US", speed = 1, fast = false): string {
   const params = new URLSearchParams({ text: text.trim(), voice: VOICE_BY_ACCENT[accent], speed: String(speed) });
+  if (fast) params.set("engine", "kokoro");
   return `/api/tts?${params}`;
 }
 
@@ -35,13 +37,13 @@ export function ttsUrl(text: string, accent: TtsAccent = "en-US", speed = 1): st
  * Warms the server cache and the browser HTTP cache for a line that will be played soon
  * (e.g. the tutor's next sentence), so its playback starts instantly.
  */
-export function prefetchTts(text: string, options: { accent?: TtsAccent; speed?: number } = {}) {
+export function prefetchTts(text: string, options: { accent?: TtsAccent; speed?: number; fast?: boolean } = {}) {
   const trimmed = text.trim();
   if (!trimmed) return;
-  const key = ttsCacheKey(VOICE_BY_ACCENT[options.accent ?? "en-US"], trimmed, options.speed ?? 1);
+  const key = `${options.fast ? "fast\n" : ""}${ttsCacheKey(VOICE_BY_ACCENT[options.accent ?? "en-US"], trimmed, options.speed ?? 1)}`;
   if (prefetched.has(key)) return;
   prefetched.add(key);
-  void fetch(ttsUrl(trimmed, options.accent, options.speed), { credentials: "same-origin" })
+  void fetch(ttsUrl(trimmed, options.accent, options.speed, options.fast), { credentials: "same-origin" })
     .then((response) => { if (!response.ok) prefetched.delete(key); return response.arrayBuffer(); })
     .catch(() => prefetched.delete(key));
 }
@@ -108,7 +110,7 @@ function audioPlayback(audio: HTMLAudioElement): TtsPlayback {
  */
 export function playTtsTrack(
   text: string,
-  options: { accent?: TtsAccent; speed?: number; onState?: (state: TtsState) => void } = {},
+  options: { accent?: TtsAccent; speed?: number; fast?: boolean; onState?: (state: TtsState) => void } = {},
 ): TtsPlayback {
   const accent = options.accent ?? "en-US";
   const speed = options.speed ?? 1;
@@ -151,7 +153,7 @@ export function playTtsTrack(
     },
   };
 
-  void Promise.resolve(ttsUrl(trimmed, accent, speed)).then(async (url) => {
+  void Promise.resolve(ttsUrl(trimmed, accent, speed, options.fast)).then(async (url) => {
     if (stopped || settled) { settle("stopped"); return; }
     if (url) {
       const audio = new Audio(url);

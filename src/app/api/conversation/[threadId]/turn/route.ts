@@ -1,18 +1,16 @@
 import { z } from "zod";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { isAiConfigured } from "@/lib/ai/client";
 import {
-  callScenarioSchema,
+  cleanCallText,
   generateCallGreeting,
+  generateCallTerms,
   MAX_CALL_TURNS,
+  selectCallTerms,
   streamCallReply,
-  type CallMessage,
-  type CallScenarioId,
-  type CallTargetTerm,
 } from "@/lib/ai/conversation";
+import { loadCallContext, loadCallThread } from "@/lib/ai/conversation-context";
 import { COURSE_CALL_TURNS } from "@/lib/ai/conversation-types";
 import { assertQuota, QuotaExceededError, recordUsage } from "@/lib/ai/quota";
-import { cefrSchema } from "@/lib/ai/speaking-feedback";
 import { transcribeRecording } from "@/lib/speech/transcribe";
 import { MAX_AUDIO_BYTES, wavDuration } from "@/lib/speech/speaking-wav";
 import { parseMultipart, readBoundedBody } from "@/lib/http/multipart";
@@ -37,62 +35,16 @@ const startSchema = z.object({ mode: z.literal("text"), start: z.literal(true), 
 type TurnInput = z.infer<typeof turnSchema> | z.infer<typeof startSchema>;
 type AudioTurnInput = Extract<TurnInput, { mode: "audio" }> & { wav?: Blob };
 
-interface ThreadRow {
-  id: string;
-  set_id: string;
-  scenario: string;
-  summary: unknown;
-}
-
-interface CallContext {
-  scenario: CallScenarioId;
-  level: string;
-  terms: CallTargetTerm[];
-  history: CallMessage[];
-  topic?: string;
-}
-
-async function loadThread(supabase: SupabaseClient, threadId: string, signal: AbortSignal) {
-  const { data, error } = await supabase.from("chat_threads")
-    .select("id, set_id, scenario, summary").eq("id", threadId).abortSignal(signal).maybeSingle();
-  if (error) throw error;
-  return data as ThreadRow | null;
-}
-
-async function loadContext(supabase: SupabaseClient, thread: ThreadRow, userId: string, signal: AbortSignal): Promise<CallContext> {
-  const [cards, profile, messages] = await Promise.all([
-    supabase.from("cards").select("term, definition_vi").eq("set_id", thread.set_id)
-      .order("position").order("created_at").order("id").limit(60).abortSignal(signal),
-    supabase.from("profiles").select("level").eq("id", userId).abortSignal(signal).maybeSingle(),
-    supabase.from("chat_messages").select("role, content").eq("thread_id", thread.id)
-      .order("created_at").order("id").limit(200).abortSignal(signal),
-  ]);
-  signal.throwIfAborted();
-  if (cards.error || profile.error || messages.error) throw new Error("Could not load call context");
-  const scenario = callScenarioSchema.safeParse(thread.scenario);
-  if (!scenario.success) throw new Error("Unknown scenario");
-  const level = cefrSchema.safeParse(profile.data?.level).data ?? "B1";
-  const terms: CallTargetTerm[] = (cards.data ?? []).map((c) => ({ term: c.term, definition_vi: c.definition_vi }));
-  const history: CallMessage[] = (messages.data ?? []).map((m) => ({
-    role: m.role === "user" ? "user" : "assistant",
-    content: m.content,
-  }));
-  let topic: string | undefined;
-  if (scenario.data === "course") {
-    const lesson = await supabase.from("course_lessons").select("warmup_question").eq("set_id", thread.set_id).abortSignal(signal).single();
-    if (lesson.error) throw lesson.error;
-    topic = lesson.data.warmup_question;
-  }
-  return { scenario: scenario.data, level, terms, history, topic };
-}
 
 /**
  * One turn of an AI call. Accepts JSON (typed text) or multipart WAV audio
  * (transcribed via Groq when no transcript is supplied). With `start: true` on
- * an empty thread it returns the opening greeting as JSON; otherwise it streams
- * the assistant reply as NDJSON lines: {"type":"delta"} then {"type":"done"}.
- * The user+assistant pair is persisted via append_ai_call_turn before "done" is
- * sent, so the client only finalizes (and plays TTS for) stored replies.
+ * an empty thread it returns {greeting, terms} as JSON; otherwise it streams
+ * NDJSON lines: {"type":"transcript"} once the user text is resolved, then
+ * {"type":"delta"} chunks and a final {"type":"done", text, terms}.
+ * The user+assistant pair (plus suggested terms) is persisted via
+ * append_ai_call_turn before "done" is sent, so the client only finalizes
+ * (and plays TTS for) stored replies.
  */
 export async function POST(request: Request, context: { params: Promise<{ threadId: string }> }) {
   const signal = AbortSignal.any([request.signal, AbortSignal.timeout(60_000)]);
@@ -103,7 +55,7 @@ export async function POST(request: Request, context: { params: Promise<{ thread
     if (signal.aborted) return Response.json({ error: "Lượt nói quá lâu. Hãy thử lại." }, { status: 504 });
     if (error instanceof QuotaExceededError) return Response.json({ error: error.message }, { status: 429 });
     if (error instanceof RangeError) return Response.json({ error: "Bản ghi quá lớn." }, { status: 413 });
-    console.error("AI call turn failed", error instanceof Error ? error.message : error);
+    console.error("AI call turn failed", error instanceof Error ? error.name : "Unknown");
     return Response.json({ error: "Chưa trả lời được. Hãy thử lại." }, { status: 502 });
   }
 }
@@ -117,33 +69,35 @@ async function handleTurn(request: Request, signal: AbortSignal, context: { para
   if (!user) return Response.json({ error: "Bạn cần đăng nhập để luyện hội thoại." }, { status: 401 });
   if (!isAiConfigured()) return Response.json({ error: "AI chưa được bật. Hãy thử lại sau." }, { status: 503 });
 
-  const thread = await loadThread(supabase, threadId, signal);
+  const thread = await loadCallThread(supabase, threadId, signal);
   if (!thread) return Response.json({ error: "Không tìm thấy cuộc gọi." }, { status: 404 });
   if (thread.summary) return Response.json({ error: "Cuộc gọi này đã kết thúc." }, { status: 409 });
 
   const input = await readTurnInput(request, signal);
   if (input instanceof Response) return input;
 
-  const ctx = await loadContext(supabase, thread, user.id, signal);
-  const userTurns = ctx.history.filter((m) => m.role === "user").length;
+  const ctx = await loadCallContext(supabase, thread, user.id, signal);
+  const userTurns = ctx.messages.filter((m) => m.role === "user").length;
 
   // First request on a fresh thread: generate and store the opening greeting.
   if ("start" in input && input.start) {
-    if (ctx.history.length !== 0 || input.expectedTurns !== 0) {
+    if (ctx.messages.length !== 0 || input.expectedTurns !== 0) {
       return Response.json({ error: "Cuộc gọi đã được mở. Hãy tải lại trang." }, { status: 409 });
     }
     await assertQuota(supabase, user.id, "conversation");
     signal.throwIfAborted();
     const greeting = await generateCallGreeting({ ...ctx, signal });
     signal.throwIfAborted();
+    const terms = selectCallTerms(greeting.terms, ctx.terms);
     const { data: saved, error } = await supabase.rpc("start_ai_call", {
       p_thread_id: thread.id,
-      p_assistant_text: greeting,
+      p_assistant_text: greeting.greeting,
+      p_terms: terms,
     }).abortSignal(signal);
     if (error) throw error;
     if (saved !== true) return Response.json({ error: "Cuộc gọi đã được mở ở nơi khác." }, { status: 409 });
     await recordUsage(supabase, user.id, "conversation");
-    return Response.json({ greeting });
+    return Response.json({ greeting: greeting.greeting, terms });
   }
 
   const maxTurns = ctx.scenario === "course" ? COURSE_CALL_TURNS : MAX_CALL_TURNS;
@@ -164,12 +118,22 @@ async function handleTurn(request: Request, signal: AbortSignal, context: { para
   signal.throwIfAborted();
 
   const remainingTurns = maxTurns - userTurns - 1;
+  const turnMessages = [...ctx.messages, { role: "user" as const, content: userText }];
+  // Chips are generated in parallel with the reply stream; a terms failure
+  // only costs the chips, never the turn (one quota unit covers both).
+  const termsPromise = generateCallTerms({
+    level: ctx.level,
+    terms: ctx.terms,
+    topic: ctx.topic,
+    messages: turnMessages,
+    signal,
+  }).catch(() => [] as string[]);
   const result = streamCallReply({
     scenario: ctx.scenario,
     level: ctx.level,
     terms: ctx.terms,
     topic: ctx.topic,
-    messages: [...ctx.history, { role: "user", content: userText }],
+    messages: turnMessages,
     remainingTurns,
     signal,
   });
@@ -180,12 +144,17 @@ async function handleTurn(request: Request, signal: AbortSignal, context: { para
     async start(controller) {
       const send = (event: object) => controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
       try {
+        // Confirm the resolved transcript before the first model delta so the
+        // client can swap its "transcribing" placeholder for the real text.
+        send({ type: "transcript", text: userText });
+
         for await (const delta of result.textStream) {
           fullText += delta;
           send({ type: "delta", text: delta });
         }
-        const reply = fullText.trim().slice(0, 2000);
+        const reply = cleanCallText(fullText).slice(0, 2000);
         if (!reply) throw new Error("Empty reply");
+        const terms = selectCallTerms(await termsPromise, ctx.terms);
 
         // Persist before signalling done so the client only finalizes stored turns.
         const { data: saved, error } = await supabase.rpc("append_ai_call_turn", {
@@ -193,6 +162,7 @@ async function handleTurn(request: Request, signal: AbortSignal, context: { para
           p_expected_turns: userTurns,
           p_user_text: userText.slice(0, 2000),
           p_assistant_text: reply,
+          p_terms: terms,
         }).abortSignal(signal);
         if (error) throw error;
         if (saved !== true) {
@@ -200,12 +170,12 @@ async function handleTurn(request: Request, signal: AbortSignal, context: { para
           send({ type: "stale" });
         } else {
           await recordUsage(supabase, user.id, "conversation");
-          send({ type: "done", text: reply });
+          send({ type: "done", text: reply, terms });
         }
       } catch (error) {
         // Never rethrow here: the finally must close the controller even on abort.
         if (!signal.aborted) {
-          console.error("AI call stream failed", error instanceof Error ? error.message : error);
+          console.error("AI call stream failed", error instanceof Error ? error.name : "Unknown");
           try { send({ type: "error", error: "Chưa tạo được câu trả lời. Hãy thử lại." }); } catch { /* closed */ }
         }
       } finally {
@@ -230,7 +200,8 @@ async function readTurnInput(request: Request, signal: AbortSignal): Promise<Tur
     const form = await parseMultipart(bytes, contentType);
     const audio = form?.get("audio");
     const transcriptField = form?.get("transcript");
-    const expected = Number(form?.get("expectedTurns"));
+    const expectedField = form?.get("expectedTurns");
+    const expected = typeof expectedField === "string" && expectedField.trim() !== "" ? Number(expectedField) : NaN;
     const parsed = audioTurnSchema.safeParse({
       mode: "audio",
       transcript: typeof transcriptField === "string" && transcriptField.trim() ? transcriptField.trim().slice(0, 2000) : null,

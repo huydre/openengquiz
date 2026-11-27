@@ -14,6 +14,8 @@ const requestSchema = z.object({
   text: z.string().trim().min(1).max(300),
   voice: z.enum(TTS_VOICES).default("af_heart"),
   speed: z.coerce.number().min(0.5).max(1.5).default(1),
+  // "kokoro" skips the primary engine: used by live calls where latency matters more than voice.
+  engine: z.enum(["auto", "kokoro"]).default("auto"),
 });
 
 type TtsRequest = z.infer<typeof requestSchema>;
@@ -33,14 +35,14 @@ type Resolved =
 async function resolveAudio(input: TtsRequest): Promise<Resolved> {
   // Normalise whitespace so "the  cat" and "the cat" share one file.
   const text = input.text.replace(/\s+/g, " ");
-  const { voice, speed } = input;
+  const { voice, speed, engine: requested } = input;
 
   const admin = createAdminClient();
   if (!admin || !isSpeechServiceConfigured()) {
     return { kind: "error", response: Response.json({ error: "Giọng đọc chưa sẵn sàng." }, { status: 503 }) };
   }
 
-  const path = `${CACHE_PREFIX}/${voice}/${createHash("sha256").update(ttsHashPreimage(voice, text, speed)).digest("hex")}.mp3`;
+  const path = `${requested === "kokoro" ? `${CACHE_PREFIX}k` : CACHE_PREFIX}/${voice}/${createHash("sha256").update(ttsHashPreimage(voice, text, speed)).digest("hex")}.mp3`;
   const storage = admin.storage.from(BUCKET);
   const url = storage.getPublicUrl(path).data.publicUrl;
 
@@ -57,9 +59,10 @@ async function resolveAudio(input: TtsRequest): Promise<Resolved> {
 
   try {
     await assertQuota(supabase, user.id, "tts");
-    const { audio, engine } = await synthesizeSpeech(text, voice, speed);
+    const { audio, engine } = await synthesizeSpeech(text, voice, speed, requested);
     after(async () => {
-      if (engine === "openai-fm") {
+      // Cache what was asked for; auto-mode fallback audio is skipped so it gets the primary voice later.
+      if (engine === "openai-fm" || requested === "kokoro") {
         const { error } = await storage.upload(path, audio, { contentType: "audio/mpeg", upsert: true });
         if (error) console.error("TTS cache upload failed", error.message);
       }
