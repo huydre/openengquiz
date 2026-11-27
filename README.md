@@ -1,0 +1,136 @@
+# OpenEngQuiz
+
+Web học từ vựng tiếng Anh miễn phí cho người Việt. Có đăng nhập, bộ từ, tra từ, tạo thẻ bằng AI, ôn tập ngắt quãng (FSRS), luyện nói theo từ và luyện phát âm.
+
+- Research: [docs/openquiz-research.md](docs/openquiz-research.md)
+- Plan MVP: [plans/261126-2202-english-learning-web-mvp/plan.md](plans/261126-2202-english-learning-web-mvp/plan.md)
+
+## Stack
+
+Next.js 16 (App Router, Cache Components, `src/proxy.ts`) · Tailwind 4 + **Watermelon UI (UI chính)** trên nền shadcn/ui (Base UI) - xem [docs/code-standards.md](docs/code-standards.md) · Supabase (Auth, Postgres + RLS, Storage) · Vercel AI SDK + DeepSeek · Tesseract.js (OCR) · Vitest.
+
+## Chạy local
+
+```bash
+pnpm install
+cp .env.example .env.local   # điền giá trị
+pnpm dev                     # http://localhost:3100
+```
+
+Biến server:
+
+| Biến | Dùng cho |
+|---|---|
+| `DEEPSEEK_API_KEY`, `AI_MODEL` | Nghĩa tiếng Việt khi tra từ, các tính năng AI |
+| `SUPABASE_SECRET_KEY` | **Bắt buộc** cho ôn tập và các chế độ học: mọi lượt ôn, phiên học, streak được ghi qua hàm DB chỉ server (secret key) gọi được, để lịch FSRS và điểm không bị sửa từ trình duyệt. Cũng dùng để ghi cache tra từ. Chỉ dùng ở server |
+
+Đặt cả `DEEPSEEK_API_KEY` và `AI_MODEL` ở server để bật tạo thẻ AI. Thiếu một trong hai, trang báo AI chưa bật và API tạo thẻ trả `503`. Tra từ vẫn hoạt động nhưng không sinh thêm nghĩa tiếng Việt bằng AI.
+
+Tạo thẻ AI giới hạn 50 thẻ mỗi lượt và 50 lượt mỗi ngày. Tesseract.js chỉ tải khi chọn ảnh; trình duyệt thu nhỏ ảnh, nhận dạng chữ tiếng Anh và cho sửa nội dung trước khi gửi. Chỉ văn bản được gửi, không tải ảnh lên server.
+
+`SPEECH_SERVICE_URL`, `SPEECH_SERVICE_TOKEN` (server-only): dịch vụ giọng nói tự host, xem mục dưới.
+
+`GROQ_API_KEY` (tùy chọn, chỉ dùng ở server): dùng Groq Whisper để chép câu trả lời khi luyện nói. Thiếu khóa thì dùng nhận dạng giọng nói của trình duyệt nếu có, hoặc nhập văn bản bằng tay. Không cần DeepSeek để chấm phát âm; thiếu cấu hình DeepSeek thì không có phản hồi ngữ pháp AI.
+
+## Dịch vụ giọng nói (`services/speech/`)
+
+Thay Azure Speech bằng mã nguồn mở, chạy Docker trên VPS. Lý do chọn: [docs/speech-alternatives-research.md](docs/speech-alternatives-research.md).
+
+| Endpoint | Việc |
+|---|---|
+| `GET /health` | Kiểm tra sống |
+| `POST /assess` (multipart `audio`, `text`, `strictness`) | Chấm phát âm theo câu mẫu (Pronunciada): điểm câu, accuracy, fluency, completeness, điểm từng từ/âm, danh sách lỗi `issues` |
+| `POST /tts` (JSON `text`, `voice`, `speed`) | Đọc chữ thành MP3 (Kokoro; giọng `af_*`/`am_*` Mỹ, `bf_*`/`bm_*` Anh) |
+
+Mọi endpoint trừ `/health` cần `Authorization: Bearer <SPEECH_API_TOKEN>`. Audio không được lưu. Container giới hạn 3 CPU, 2 GB RAM, tối đa 2 tác vụ cùng lúc (VPS dùng chung với app khác).
+
+OpenEngQuiz không lưu bản ghi giọng nói. Trình duyệt gửi WAV cho dịch vụ chấm; khi luyện nói, Groq hoặc dịch vụ nhận dạng của trình duyệt có thể xử lý giọng nói để tạo bản chép. Lịch sử chỉ lưu câu mẫu/câu hỏi, bản chép và kết quả chấm.
+
+Đang chạy tại `https://speech.techlaai.io.vn` (Cloudflare Tunnel trên VPS trỏ vào `localhost:8200`; lúc dev cũng gọi được qua IP Tailscale cổng 8200).
+
+Triển khai lại:
+
+```bash
+scp services/speech/{Dockerfile,app.py,compose.yml,requirements.txt} <vps>:openengquiz-speech/service/
+# Trên VPS, file .env: SPEECH_API_TOKEN=<64 ký tự hex>, BIND_IP=<ip tailscale>
+cd ~/openengquiz-speech/service && docker compose up -d --build
+```
+
+| Lệnh | Việc |
+|---|---|
+| `pnpm test` | Unit test (Vitest) |
+| `pnpm typecheck` | Sinh route types + `tsc` |
+| `pnpm lint` | ESLint |
+| `pnpm build` | Build production |
+
+CI ở [.github/workflows/ci.yml](.github/workflows/ci.yml) chạy `pnpm install --frozen-lockfile`, `pnpm lint`, `pnpm typecheck` và `pnpm test` cho mỗi push hoặc pull request. Chạy cùng bộ kiểm tra tại local:
+
+```bash
+pnpm lint && pnpm typecheck && pnpm test
+```
+
+## Tính năng hiện có
+
+| Đường dẫn | Chức năng |
+|---|---|
+| `/onboarding` | Chọn mục tiêu học và trình độ CEFR, hoặc bỏ qua. Người mới vào `/home` được chuyển đến đây nếu chưa chọn mục tiêu. |
+| `/sets` | Xem các bộ từ của mình; tạo bộ mới tại `/sets/new`. |
+| `/sets/new/ai` | Tạo thẻ từ danh sách từ, đoạn văn bản, chủ đề hoặc ảnh (OCR). Bỏ chọn hoặc sửa thẻ trước khi lưu vào bộ mới hay bộ của mình. |
+| `/sets/[id]` | Học flashcard, quản lý thẻ, nhập nhiều thẻ và đổi chế độ chia sẻ. Có thể sửa bộ tại `/sets/[id]/edit`, xoá hoặc nhân bản. |
+| `/review`, `/stats` | Ôn tập ngắt quãng và xem tiến độ. Các chế độ học mở từ trang bộ từ. |
+| `/pronunciation` | Đọc câu tự nhập hoặc câu ví dụ từ thẻ, nghe mẫu và xem điểm phát âm. |
+| `/study/[setId]/speaking` | Trả lời câu hỏi bằng từ mục tiêu, xem phát âm và nhận phản hồi AI nếu đã bật DeepSeek. |
+| `/speaking/history` | Xem các lượt luyện gần đây. Không lưu bản ghi. |
+| `/study/[setId]/grammar`, `/study/[setId]/reading`, `/study/[setId]/call` | Luyện dịch và sửa câu, đọc hiểu với từ trong bộ, hội thoại theo kịch bản bằng giọng nói hoặc gõ chữ. |
+| `/history` | Xem câu sai, đoạn đọc và hội thoại đã lưu. Không lưu bản ghi. |
+| `/paths`, `/paths/[id]` | Khám phá lộ trình, xem tiến độ, học bộ kế tiếp hoặc ôn cả lộ trình qua `/review`. |
+| `/paths/new`, `/paths/ai` | Tự xếp bộ từ hoặc để AI tạo lộ trình riêng theo mục tiêu, thời gian học và CEFR. |
+| `/lookup` | Tra từ tiếng Anh rồi lưu kết quả vào bộ từ của mình. |
+| `/api/lookup?term=word` | API yêu cầu đăng nhập, chuẩn hoá từ, đọc cache có sẵn rồi tra Free Dictionary API khi cần. |
+| `/api/ai/generate-cards` | API tạo thẻ bằng AI (yêu cầu đăng nhập và quota). |
+
+Thẻ hỗ trợ thêm, sửa, xoá, đổi thứ tự và nhập hàng loạt bằng `từ - nghĩa`, tab hoặc CSV hai cột. Flashcard hỗ trợ lật bằng click hoặc Space, chuyển bằng phím mũi tên, xáo trộn, đánh dấu sao trong trình duyệt và phát âm en-US/en-GB bằng `speechSynthesis`.
+
+Xem trạng thái triển khai và kiểm thử tại [kế hoạch MVP](plans/261126-2202-english-learning-web-mvp/plan.md). Ảnh/GIF đính kèm thẻ vẫn nằm trong kế hoạch.
+
+## Database
+
+Migration nằm ở `supabase/migrations/`. Đẩy lên project:
+
+```bash
+set -a; . ./.env.local; set +a
+# Kết nối trực tiếp chỉ có IPv6; mạng không có IPv6 thì dùng session pooler (IPv4):
+supabase db push --db-url "postgresql://postgres.$SUPABASE_PROJECT_REF:$SUPABASE_DB_PASSWORD@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
+```
+
+Mọi bảng bật RLS. `word_cache` chỉ server ghi (bằng secret key); `ai_usage` người dùng chỉ đọc/thêm của mình, không sửa/xoá được (để quota không bị reset).
+
+### Tạo lộ trình hệ thống
+
+Sau khi áp migration, cài Bun và chuẩn bị tài khoản hệ thống đã có profile. Đặt `SEED_PATHS_OWNER_ID` là UUID profile đó. Cung cấp `DEEPSEEK_API_KEY`, `AI_MODEL`, `NEXT_PUBLIC_SUPABASE_URL` và `SUPABASE_SECRET_KEY` qua môi trường chạy hoặc `.env.local`.
+
+```bash
+pnpm seed:paths
+```
+
+Lệnh đọc `content/paths.yaml`, bỏ qua slug đã có và lưu mỗi lộ trình cùng bộ từ ở trạng thái riêng tư. Duyệt CEFR, IPA, nghĩa và ví dụ trước khi công khai các bộ từ, rồi công khai lộ trình.
+
+Trong trang chi tiết, **Học tiếp** mở bộ đầu tiên còn từ chưa thuộc. Hoàn thành Learn hoặc thêm bộ vào ôn tập để đưa thẻ vào SRS; **Ôn cả lộ trình** chỉ lấy thẻ đã vào SRS từ các bộ thuộc lộ trình, vẫn áp dụng giới hạn thẻ mới theo ngày.
+
+## Cấu trúc
+
+```text
+src/
+  proxy.ts                 refresh session Supabase + chặn route cần đăng nhập
+  app/page.tsx             landing
+  app/login/               đăng nhập Google / email magic link
+  app/auth/                callback OAuth, server action đăng xuất
+  app/(app)/               khu vực đã đăng nhập (/home, /onboarding, /sets, /lookup)
+  app/api/lookup/          API tra từ cho người đã đăng nhập
+  app/api/ai/generate-cards/ API tạo thẻ từ dữ liệu văn bản
+  lib/supabase/            client cho browser / server / proxy
+  lib/ai/                  DeepSeek client, quota theo ngày (giờ VN)
+  lib/vocab/               schema thẻ, parser nhập nhiều thẻ, tra từ điển
+.github/workflows/ci.yml   lint, typecheck, test
+supabase/migrations/       schema + RLS
+```
