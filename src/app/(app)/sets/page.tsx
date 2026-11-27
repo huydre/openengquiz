@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { courseSetIds } from "@/lib/courses/course-sets";
 import { LogoLoader } from "@/components/layout/logo-loader";
 import { FolderBar, type FolderOption } from "./folder-bar";
 
@@ -14,12 +15,15 @@ async function SetsContent({ searchParams }: { searchParams: PageProps<"/sets">[
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const requested = (await searchParams).folder;
-  const [{ data: allSets, error }, { data: folderRows }] = await Promise.all([
+  const [{ data: ownSets, error }, { data: folderRows }, courseSets] = await Promise.all([
     supabase.from("study_sets")
       .select("id, title, description, visibility, cards(count)")
       .eq("owner_id", user!.id).order("updated_at", { ascending: false }),
     supabase.from("folders").select("id, name, folder_sets(set_id)").eq("owner_id", user!.id).order("created_at"),
+    courseSetIds(supabase),
   ]);
+  // Only the learner's own sets: course lesson sets live under Khoá học.
+  const allSets = ownSets?.filter((set) => !courseSets.has(set.id));
   const folders: FolderOption[] = (folderRows ?? []).map((folder) => ({ id: folder.id, name: folder.name, count: folder.folder_sets?.length ?? 0 }));
   const activeFolder = (folderRows ?? []).find((folder) => folder.id === requested) ?? null;
   const inFolder = new Set(activeFolder?.folder_sets?.map((row) => row.set_id) ?? []);
