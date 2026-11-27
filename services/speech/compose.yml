@@ -1,0 +1,21 @@
+# Speech service for OpenEngQuiz. Listens on localhost (for the host's reverse proxy / tunnel)
+# and on the Tailscale IP (BIND_IP in .env) for local development.
+services:
+  speech:
+    build: .
+    container_name: openengquiz-speech
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MAX_CONCURRENT_JOBS: "2"
+      OMP_NUM_THREADS: "2"
+      KOKORO_THREADS: "5"
+      WHISPER_THREADS: "4"
+    ports:
+      - "127.0.0.1:8200:8000"
+      - "${BIND_IP:-127.0.0.1}:8200:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: "6"
+          memory: 3g

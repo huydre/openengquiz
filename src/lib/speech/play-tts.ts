@@ -1,0 +1,185 @@
+"use client";
+
+/**
+ * Plays natural pronunciation audio (GET /api/tts: openai.fm voices with Kokoro fallback, cached in
+ * Storage; `fast` goes straight to Kokoro for live calls where latency matters most). Falls back to the
+ * browser's speechSynthesis when the service is unavailable or the user is signed out.
+ * `playTts` fires and forgets; `playTtsTrack` returns a handle so callers (e.g. TutorNarration)
+ * can await the outcome, pause, resume and stop.
+ *
+ * Speed is applied exactly once: Kokoro synthesizes at `speed`, so server audio plays at
+ * rate 1. The browser speechSynthesis fallback sets `utterance.rate` instead.
+ */
+
+import { ttsCacheKey } from "./tts-cache-key";
+
+export type TtsAccent = "en-US" | "en-GB";
+export type TtsSpeed = 0.75 | 0.9 | 1;
+
+/** How a track finished: natural end, explicit stop, or media failure. */
+export type TtsOutcome = "ended" | "stopped" | "failed";
+
+const VOICE_BY_ACCENT: Record<TtsAccent, string> = { "en-US": "af_heart", "en-GB": "bf_emma" };
+const prefetched = new Set<string>();
+let current: TtsPlayback | null = null;
+
+/**
+ * Direct audio URL: the route answers with a redirect to the cached file or the fresh MP3,
+ * so an <audio> element starts streaming without an extra JSON round trip.
+ */
+export function ttsUrl(text: string, accent: TtsAccent = "en-US", speed = 1, fast = false): string {
+  const params = new URLSearchParams({ text: text.trim(), voice: VOICE_BY_ACCENT[accent], speed: String(speed) });
+  if (fast) params.set("engine", "kokoro");
+  return `/api/tts?${params}`;
+}
+
+/**
+ * Warms the server cache and the browser HTTP cache for a line that will be played soon
+ * (e.g. the tutor's next sentence), so its playback starts instantly.
+ */
+export function prefetchTts(text: string, options: { accent?: TtsAccent; speed?: number; fast?: boolean } = {}) {
+  const trimmed = text.trim();
+  if (!trimmed) return;
+  const key = `${options.fast ? "fast\n" : ""}${ttsCacheKey(VOICE_BY_ACCENT[options.accent ?? "en-US"], trimmed, options.speed ?? 1)}`;
+  if (prefetched.has(key)) return;
+  prefetched.add(key);
+  void fetch(ttsUrl(trimmed, options.accent, options.speed, options.fast), { credentials: "same-origin" })
+    .then((response) => { if (!response.ok) prefetched.delete(key); return response.arrayBuffer(); })
+    .catch(() => prefetched.delete(key));
+}
+
+export type TtsState = "loading" | "playing" | "paused" | "idle";
+
+export interface TtsPlayback {
+  /** Resolves with the outcome when the utterance ends, is stopped, or fails. */
+  done: Promise<TtsOutcome>;
+  pause(): void;
+  resume(): void;
+  stop(): void;
+}
+
+function speakWithBrowser(text: string, accent: TtsAccent, speed: number): TtsPlayback {
+  if (!("speechSynthesis" in window)) {
+    return { done: Promise.resolve<TtsOutcome>("failed"), pause() {}, resume() {}, stop() {} };
+  }
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = accent;
+  utterance.rate = speed;
+  let settle!: (outcome: TtsOutcome) => void;
+  const done = new Promise<TtsOutcome>((resolve) => { settle = resolve; });
+  utterance.onend = () => settle("ended");
+  utterance.onerror = () => settle("failed");
+  window.speechSynthesis.speak(utterance);
+  return {
+    done,
+    pause() { window.speechSynthesis.pause(); },
+    resume() { window.speechSynthesis.resume(); },
+    stop() { window.speechSynthesis.cancel(); settle("stopped"); },
+  };
+}
+
+function audioPlayback(audio: HTMLAudioElement): TtsPlayback {
+  let settle!: (outcome: TtsOutcome) => void;
+  const done = new Promise<TtsOutcome>((resolve) => { settle = resolve; });
+  let outcome: TtsOutcome | null = null;
+  const finish = (value: TtsOutcome) => {
+    if (outcome === null) {
+      outcome = value;
+      settle(value);
+    }
+  };
+  audio.addEventListener("ended", () => finish("ended"), { once: true });
+  audio.addEventListener("error", () => finish("failed"), { once: true });
+  return {
+    done,
+    pause() { audio.pause(); },
+    resume() { void audio.play().catch(() => finish("failed")); },
+    stop() {
+      audio.pause();
+      audio.removeAttribute("src");
+      finish("stopped");
+    },
+  };
+}
+
+/**
+ * Starts playback and returns a handle. Replaces any in-flight playback.
+ * `onState` reports loading/playing/idle transitions for UI animation; "idle" fires only
+ * for the most recent track so stale completions cannot reset the mascot.
+ */
+export function playTtsTrack(
+  text: string,
+  options: { accent?: TtsAccent; speed?: number; fast?: boolean; onState?: (state: TtsState) => void } = {},
+): TtsPlayback {
+  const accent = options.accent ?? "en-US";
+  const speed = options.speed ?? 1;
+  const trimmed = text.trim();
+  const emit = options.onState;
+  current?.stop();
+
+  if (!trimmed) {
+    emit?.("idle");
+    return { done: Promise.resolve<TtsOutcome>("ended"), pause() {}, resume() {}, stop() {} };
+  }
+
+  emit?.("loading");
+  let inner: TtsPlayback | null = null;
+  let stopped = false;
+  let settled = false;
+
+  let settleDone!: (outcome: TtsOutcome) => void;
+  const done = new Promise<TtsOutcome>((resolve) => { settleDone = resolve; });
+
+  const settle = (outcome: TtsOutcome) => {
+    if (settled) return;
+    settled = true;
+    if (current === playback) current = null;
+    emit?.("idle");
+    settleDone(outcome);
+  };
+
+  const playback: TtsPlayback = {
+    done,
+    pause() { inner?.pause(); },
+    resume() { inner?.resume(); },
+    stop() {
+      if (settled) return;
+      stopped = true;
+      inner?.stop();
+      // If the URL fetch is still pending, settle when it resolves; otherwise inner.done
+      // already settles via the handler below.
+      if (!inner) settle("stopped");
+    },
+  };
+
+  void Promise.resolve(ttsUrl(trimmed, accent, speed, options.fast)).then(async (url) => {
+    if (stopped || settled) { settle("stopped"); return; }
+    if (url) {
+      const audio = new Audio(url);
+      inner = audioPlayback(audio);
+      try {
+        await audio.play();
+        emit?.("playing");
+      } catch {
+        // Autoplay blocked or decode failure: fall back to the browser voice once.
+        inner.stop();
+        if (stopped || settled) { settle("stopped"); return; }
+        inner = speakWithBrowser(trimmed, accent, speed);
+        emit?.("playing");
+      }
+    } else {
+      inner = speakWithBrowser(trimmed, accent, speed);
+      emit?.("playing");
+    }
+    const active = inner;
+    void active.done.then((outcome) => settle(outcome));
+  });
+
+  current = playback;
+  return playback;
+}
+
+export async function playTts(text: string, options: { accent?: TtsAccent; speed?: number } = {}) {
+  playTtsTrack(text, options);
+}
