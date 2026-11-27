@@ -2,21 +2,17 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { ArrowRight, Flame, Layers, Trophy, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LogoLoader } from "@/components/layout/logo-loader";
+import { cn } from "@/lib/utils";
 import { StudyQuestion } from "./study-question";
 import { ResultSummary } from "./result-summary";
 import { useStudySession } from "./use-study-session";
+import { STUDY_MODE_META } from "./study-mode-meta";
 import type { QuestionType, StudyCard, StudyMode } from "@/lib/study/study-types";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const labels: Record<StudyMode, string> = {
-  learn: "Học từ mới",
-  quiz: "Kiểm tra",
-  dictation: "Nghe viết",
-  writing: "Luyện viết",
-  game: "Thử thách tốc độ",
-};
-const quizChoices: { type: QuestionType; label: string }[] = [
+const QUIZ_TYPES: { type: QuestionType; label: string }[] = [
   { type: "multiple_choice", label: "Trắc nghiệm" },
   { type: "true_false", label: "Đúng / Sai" },
   { type: "fill", label: "Điền từ" },
@@ -31,92 +27,186 @@ export function StudyRunner({ setId, title, mode, cards, highScore = 0 }: {
   highScore?: number;
 }) {
   const [count, setCount] = useState(Math.min(10, cards.length));
-  const [quizTypes, setQuizTypes] = useState<QuestionType[]>(quizChoices.map((item) => item.type));
+  const [quizTypes, setQuizTypes] = useState<QuestionType[]>(QUIZ_TYPES.map((item) => item.type));
   const session = useStudySession(setId, mode, cards);
+  const meta = STUDY_MODE_META[mode];
   const card = cards.find((item) => item.id === session.current?.cardId);
-  const progress = mode === "learn"
-    ? session.learn.mastered.length
-    : session.index;
+  const progress = mode === "learn" ? session.learn.mastered.length : session.index;
   const total = mode === "learn" ? cards.length : session.questions.length;
+  const inSession = session.status === "active" && card && session.current;
+
+  // Live game score and streak, mirroring the server's scoring (100 points plus 20 per streak step, capped).
+  const gameScore = session.attempts.reduce(({ sum, combo }, attempt) => {
+    const streak = attempt.correct ? combo + 1 : 0;
+    return { sum: sum + (attempt.correct ? 100 + Math.min(streak - 1, 5) * 20 : 0), combo: streak };
+  }, { sum: 0, combo: 0 }).sum;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <Link href={`/sets/${setId}`} className="text-sm font-bold underline">← {title}</Link>
-      <header className="space-y-1">
-        <p className="text-sm font-bold text-primary">{title}</p>
-        <h1 className="text-3xl font-black">{labels[mode]}</h1>
-        {mode === "game" && highScore > 0 ? <p>Điểm cao nhất của bạn: {highScore}</p> : null}
-      </header>
+      {/* Session bar: close, progress and counter. */}
+      <div className="flex items-center gap-3">
+        <Link
+          href={`/sets/${setId}`}
+          aria-label={`Thoát, về bộ từ ${title}`}
+          className="text-muted-foreground hover:bg-muted hover:text-foreground grid size-10 shrink-0 place-items-center rounded-xl transition-colors"
+        >
+          <X className="size-6" aria-hidden="true" />
+        </Link>
+        {inSession ? (
+          <>
+            <div
+              role="progressbar"
+              aria-label="Tiến độ"
+              aria-valuemin={0}
+              aria-valuemax={total}
+              aria-valuenow={progress}
+              className="bg-muted h-4 flex-1 overflow-hidden rounded-full"
+            >
+              <div
+                className={cn("relative h-full rounded-full transition-[width] duration-500 ease-out", mode === "game" ? "bg-brand-orange" : "bg-primary")}
+                style={{ width: `${total ? Math.max(4, (progress / total) * 100) : 0}%` }}
+              >
+                <span className="absolute inset-x-2 top-1 h-1 rounded-full bg-white/35" />
+              </div>
+            </div>
+            {mode === "game" ? (
+              <span className="flex items-center gap-1.5 text-sm font-black tabular-nums">
+                <Flame className="text-brand-orange size-5" aria-hidden="true" />{gameScore}
+              </span>
+            ) : (
+              <span className="text-muted-foreground w-14 text-right text-sm font-black tabular-nums">{progress}/{total}</span>
+            )}
+          </>
+        ) : (
+          <p className="text-muted-foreground truncate text-sm font-extrabold">{title}</p>
+        )}
+      </div>
+
       {!cards.length ? (
-        <p role="status">Bộ từ chưa có thẻ. Hãy thêm thẻ trước khi học.</p>
-      ) : session.status === "setup" ? (
-        <section className="space-y-5 rounded-3xl border-2 bg-card p-6">
-          <p>
-            {mode === "learn" ? "Học từng đợt 6 thẻ. Thẻ sai sẽ xuất hiện lại." :
-              mode === "writing" ? "Gõ từ theo nghĩa. Từ sai sẽ quay lại." :
-                mode === "dictation" ? "Nghe phát âm rồi gõ lại từ hoặc câu ví dụ." :
-                  mode === "game" ? "Chọn nghĩa đúng trong 15 giây mỗi câu. Chuỗi đúng tăng điểm." :
-                    "Chọn số câu và loại câu để bắt đầu."}
-          </p>
+        <EmptySet setId={setId} />
+      ) : session.status === "setup" || session.status === "starting" ? (
+        <section className="bg-card overflow-hidden rounded-[2rem] border-2 shadow-[0_6px_0_var(--border)]">
+          <div className="from-muted/70 to-card space-y-4 bg-gradient-to-b p-6 sm:p-8">
+            <span className={cn("grid size-16 place-items-center rounded-3xl", meta.tone)}>
+              <meta.icon className="size-8" aria-hidden="true" />
+            </span>
+            <div>
+              <h1 className="text-3xl font-black tracking-tight sm:text-4xl">{meta.label}</h1>
+              <p className="text-muted-foreground mt-2 max-w-xl text-lg">{meta.description}</p>
+            </div>
+            <div className="flex flex-wrap gap-2 text-sm font-extrabold">
+              <span className="bg-card flex items-center gap-1.5 rounded-full border-2 px-3 py-1"><Layers className="size-4" aria-hidden="true" />{cards.length} thẻ · {title}</span>
+              {mode === "game" && highScore > 0 ? (
+                <span className="bg-accent/20 text-accent-foreground flex items-center gap-1.5 rounded-full px-3 py-1"><Trophy className="size-4" aria-hidden="true" />Kỷ lục {highScore}</span>
+              ) : null}
+            </div>
+          </div>
+
           {mode === "quiz" ? (
-            <div className="space-y-4">
-              <label className="block font-bold">
-                Số câu
-                <Select value={String(count)} onValueChange={(value) => setCount(Number(value))}>
-                  <SelectTrigger className="ml-3 inline-flex">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[5, 10, 20, cards.length].filter((value, index, values) =>
-                      value <= cards.length && values.indexOf(value) === index,
-                    ).map((value) => (
-                      <SelectItem key={value} value={String(value)}>{value}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </label>
-              <fieldset className="flex flex-wrap gap-4">
-                <legend className="mb-2 font-bold">Loại câu</legend>
-                {quizChoices.map((choice) => (
-                  <label key={choice.type} className="flex items-center gap-2">
-                    <input type="checkbox" checked={quizTypes.includes(choice.type)}
-                      onChange={() => setQuizTypes((current) => current.includes(choice.type)
-                        ? current.filter((item) => item !== choice.type)
-                        : [...current, choice.type])} />
-                    {choice.label}
-                  </label>
-                ))}
-              </fieldset>
+            <div className="space-y-5 border-t-2 p-6 sm:p-8">
+              <div>
+                <p id="quiz-count" className="mb-2 font-extrabold">Số câu</p>
+                <div role="radiogroup" aria-labelledby="quiz-count" className="flex flex-wrap gap-2">
+                  {[5, 10, 20, cards.length].filter((value, index, values) => value <= cards.length && values.indexOf(value) === index).map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      role="radio"
+                      aria-checked={count === value}
+                      onClick={() => setCount(value)}
+                      className={cn(
+                        "h-11 min-w-16 rounded-2xl border-2 px-4 font-black transition-colors",
+                        count === value ? "border-secondary bg-secondary/15 text-secondary" : "hover:bg-muted",
+                      )}
+                    >
+                      {value === cards.length && value > 20 ? `Tất cả (${value})` : value}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p id="quiz-types" className="mb-2 font-extrabold">Dạng câu</p>
+                <div role="group" aria-labelledby="quiz-types" className="flex flex-wrap gap-2">
+                  {QUIZ_TYPES.map((choice) => {
+                    const on = quizTypes.includes(choice.type);
+                    return (
+                      <button
+                        key={choice.type}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => setQuizTypes((current) => on ? current.filter((item) => item !== choice.type) : [...current, choice.type])}
+                        className={cn(
+                          "h-11 rounded-2xl border-2 px-4 font-extrabold transition-colors",
+                          on ? "border-primary bg-primary/12 text-primary-edge" : "text-muted-foreground hover:bg-muted",
+                        )}
+                      >
+                        {choice.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {!quizTypes.length ? <p className="text-destructive mt-2 text-sm font-bold">Chọn ít nhất một dạng câu.</p> : null}
+              </div>
             </div>
           ) : null}
-          {session.error ? <p role="alert" className="text-destructive">{session.error}</p> : null}
-          <Button type="button" disabled={mode === "quiz" && !quizTypes.length}
-            onClick={() => session.start(count, quizTypes)}>Bắt đầu</Button>
-        </section>
-      ) : session.status === "starting" ? (
-        <p role="status">Đang bắt đầu...</p>
-      ) : session.status === "finished" && session.result ? (
-        <ResultSummary mode={mode} setId={setId} cards={cards}
-          attempts={session.attempts} score={session.result.score} total={session.result.total} />
-      ) : session.status === "saving" ? (
-        <p role="status">Đang lưu kết quả...</p>
-      ) : session.status === "save-error" ? (
-        <div className="space-y-3">
-          <p role="alert" className="text-destructive">{session.error}</p>
-          <Button type="button" onClick={session.retry}>Thử lưu lại</Button>
-        </div>
-      ) : card && session.current ? (
-        <>
-          <div aria-label={`Tiến độ ${progress} trên ${total}`}
-            className="h-3 overflow-hidden rounded-full bg-muted">
-            <div className="h-full rounded-full bg-primary"
-              style={{ width: `${total ? progress / total * 100 : 0}%` }} />
+
+          <div className="flex flex-col gap-3 border-t-2 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
+            <p className="text-muted-foreground text-sm font-bold">Mẹo: dùng phím số để chọn đáp án, Enter để tiếp tục.</p>
+            <Button
+              type="button"
+              size="lg"
+              className="h-14 px-10 text-base"
+              disabled={session.status === "starting" || (mode === "quiz" && !quizTypes.length)}
+              onClick={() => session.start(count, quizTypes)}
+            >
+              {session.status === "starting" ? "Đang bắt đầu..." : <>Bắt đầu <ArrowRight aria-hidden="true" /></>}
+            </Button>
           </div>
-          <p className="text-sm font-bold">Đã hoàn thành {progress}/{total}</p>
-          <StudyQuestion key={`${session.index}-${session.attempts.length}`}
-            question={session.current} card={card} cards={cards} onAnswer={session.submit} />
+          {session.error ? <p role="alert" className="text-destructive px-8 pb-6 font-bold">{session.error}</p> : null}
+        </section>
+      ) : session.status === "finished" && session.result ? (
+        <ResultSummary
+          mode={mode}
+          setId={setId}
+          cards={cards}
+          attempts={session.attempts}
+          score={session.result.score}
+          total={session.result.total}
+          onRestart={() => session.start(count, quizTypes)}
+        />
+      ) : session.status === "saving" ? (
+        <LogoLoader label="Đang lưu kết quả..." />
+      ) : session.status === "save-error" ? (
+        <section className="bg-card space-y-4 rounded-[2rem] border-2 p-8 text-center shadow-[0_6px_0_var(--border)]">
+          <p role="alert" className="text-destructive text-lg font-bold">{session.error}</p>
+          <Button type="button" size="lg" onClick={session.retry}>Thử lưu lại</Button>
+        </section>
+      ) : inSession ? (
+        <>
+          {mode === "learn" ? (
+            <p className="text-muted-foreground text-sm font-extrabold">
+              Đợt {session.learn.batch} · {session.current!.type === "multiple_choice" ? "Nhận diện nghĩa" : "Tự gõ lại từ"}
+            </p>
+          ) : null}
+          <StudyQuestion
+            key={`${session.index}-${session.attempts.length}`}
+            question={session.current!}
+            card={card!}
+            cards={cards}
+            onAnswer={session.submit}
+          />
         </>
       ) : null}
     </div>
+  );
+}
+
+function EmptySet({ setId }: { setId: string }) {
+  return (
+    <section className="bg-card space-y-4 rounded-[2rem] border-2 p-8 text-center shadow-[0_6px_0_var(--border)]">
+      <p role="status" className="text-xl font-black">Bộ từ chưa có thẻ nào</p>
+      <p className="text-muted-foreground">Thêm vài thẻ rồi quay lại học nhé.</p>
+      <Link href={`/sets/${setId}`} className="text-primary-edge inline-block font-extrabold underline">Thêm thẻ</Link>
+    </section>
   );
 }
