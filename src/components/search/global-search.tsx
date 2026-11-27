@@ -98,11 +98,11 @@ export function GlobalSearch() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-muted-foreground hover:bg-muted flex h-9 w-full max-w-md items-center gap-2 rounded-xl border-2 px-3 text-sm font-bold transition-colors"
+        className="text-muted-foreground bg-muted/70 hover:bg-muted hover:border-border flex h-10 w-full max-w-lg items-center gap-2.5 rounded-2xl border-2 border-transparent px-3.5 text-sm font-bold transition-colors"
       >
         <Search className="size-4 shrink-0" aria-hidden="true" />
         <span className="flex-1 truncate text-left">Tìm bộ từ, lộ trình, bài học, từ vựng...</span>
-        <kbd className="bg-muted hidden rounded-md px-1.5 py-0.5 text-[11px] font-black sm:inline">⌘K</kbd>
+        <kbd className="bg-card text-muted-foreground hidden rounded-lg border px-1.5 py-0.5 text-[11px] font-black sm:inline">⌘K</kbd>
       </button>
 
       <Dialog open={open} onOpenChange={(value) => { setOpen(value); if (!value) setActive(0); }}>

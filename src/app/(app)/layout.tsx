@@ -32,9 +32,9 @@ async function SignedInShell({ children }: { children: React.ReactNode }) {
     <SidebarProvider style={{ "--sidebar-width-icon": "4.5rem" } as React.CSSProperties}>
       <AppSidebar displayName={displayName} />
       <SidebarInset>
-        <header className="flex h-12 items-center gap-2 border-b px-3">
+        <header className="bg-background/90 sticky top-0 z-30 flex h-14 items-center gap-2 border-b px-3 backdrop-blur-md">
           <SidebarTrigger aria-label="Mở hoặc thu gọn menu" />
-          <div className="flex flex-1 justify-center px-2">
+          <div className="flex min-w-0 flex-1 px-1">
             <GlobalSearch />
           </div>
           <ThemeToggle />
