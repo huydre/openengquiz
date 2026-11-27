@@ -30,7 +30,7 @@ Tạo thẻ AI giới hạn 50 thẻ mỗi lượt và 50 lượt mỗi ngày. T
 
 `SPEECH_SERVICE_URL`, `SPEECH_SERVICE_TOKEN` (server-only): dịch vụ giọng nói tự host, xem mục dưới.
 
-`GROQ_API_KEY` (khuyến nghị, chỉ dùng ở server): chép câu trả lời nói bằng Groq Whisper (gói miễn phí). Thiếu khoá, hết hạn mức hoặc lỗi thì tự chuyển sang Whisper `base.en` trên dịch vụ giọng nói (`/transcribe`, chậm và kém chính xác hơn với giọng nặng). Người học luôn xem và sửa được bản chép trước khi gửi. Không cần DeepSeek để chấm phát âm; thiếu cấu hình DeepSeek thì không có phản hồi ngữ pháp AI.
+`GROQ_API_KEY` (khuyến nghị, chỉ dùng ở server): chép câu trả lời nói bằng Groq Whisper (gói miễn phí). Thiếu khoá, hết hạn mức hoặc lỗi thì tự chuyển sang Whisper `base.en` trên dịch vụ giọng nói (`/transcribe`, chậm và kém chính xác hơn với giọng nặng). Người học luôn xem và sửa được bản chép trước khi gửi. Cùng khoá này, nhận xét câu trả lời trong bài học chạy trên Groq (`openai/gpt-oss-120b` chấm điểm, `openai/gpt-oss-20b` viết câu mẫu, khoảng 1,5 s; đổi bằng `FEEDBACK_MODEL` và `FEEDBACK_ANSWER_MODEL`). Hết hạn mức hoặc lỗi thì tự dùng DeepSeek. Band IELTS bị giới hạn theo độ dài câu trả lời để không chấm quá tay. Không cần DeepSeek để chấm phát âm; thiếu cấu hình DeepSeek thì không có phản hồi ngữ pháp AI.
 
 ## Dịch vụ giọng nói (`services/speech/`)
 
