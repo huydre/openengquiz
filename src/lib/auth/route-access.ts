@@ -4,7 +4,7 @@ import { safeNextPath } from "./safe-next-path";
  * Who may open which page. Everything is private unless listed here, so new app pages are
  * protected by default.
  */
-const PUBLIC_EXACT = new Set(["/", "/login"]);
+const PUBLIC_EXACT = new Set(["/", "/login", "/privacy", "/terms"]);
 // /api routes check the session themselves and answer JSON (a redirect would break fetch callers).
 const PUBLIC_PREFIXES = ["/auth", "/shared", "/api"];
 /** Pages that make no sense once signed in. */

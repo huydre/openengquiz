@@ -1,9 +1,28 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { FlashcardViewer } from "@/app/(app)/sets/flashcard-viewer";
 import type { CardRecord } from "@/app/(app)/sets/card-record";
 import { LogoLoader } from "@/components/layout/logo-loader";
+
+export async function generateMetadata({ params }: PageProps<"/shared/[id]">): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data: set } = await supabase.from("study_sets").select("title, description, visibility, cards(count)")
+    .eq("id", id).in("visibility", ["unlisted", "public"]).maybeSingle();
+  if (!set) return { title: "Bộ từ không tồn tại", robots: { index: false } };
+  const count = set.cards?.[0]?.count ?? 0;
+  const description = set.description || `Bộ ${count} từ vựng tiếng Anh để học bằng flashcard, ôn tập và luyện nói trên OpenEngQuiz.`;
+  return {
+    title: set.title,
+    description,
+    alternates: { canonical: `/shared/${id}` },
+    openGraph: { title: `${set.title} · ${count} từ vựng`, description, url: `/shared/${id}` },
+    // Unlisted sets are reachable by link only: keep them out of search results.
+    robots: set.visibility === "public" ? undefined : { index: false, follow: false },
+  };
+}
 
 export default function SharedSetPage({ params }: PageProps<"/shared/[id]">) {
   return <Suspense fallback={<LogoLoader label="Đang tải bộ từ..." />}><SharedSetContent params={params} /></Suspense>;

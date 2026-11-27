@@ -124,15 +124,18 @@ export function AppSidebar({ displayName }: { displayName: string }) {
 
       <SidebarFooter className="p-3">
         <div className="flex items-center gap-3 rounded-2xl border-2 p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:p-0">
-          <span
-            aria-hidden="true"
-            className="bg-secondary text-secondary-foreground grid size-9 shrink-0 place-items-center rounded-full text-sm font-black"
-          >
-            {initials(displayName)}
-          </span>
-          <span className="min-w-0 flex-1 truncate text-sm font-bold group-data-[collapsible=icon]:hidden" title={displayName}>
-            {displayName}
-          </span>
+          <Link href="/account" title="Tài khoản" className="flex min-w-0 flex-1 items-center gap-3 rounded-xl outline-none focus-visible:ring-2 group-data-[collapsible=icon]:flex-none">
+            <span
+              aria-hidden="true"
+              className="bg-secondary text-secondary-foreground grid size-9 shrink-0 place-items-center rounded-full text-sm font-black"
+            >
+              {initials(displayName)}
+            </span>
+            <span className="min-w-0 flex-1 truncate text-sm font-bold group-data-[collapsible=icon]:hidden">
+              {displayName}
+            </span>
+            <span className="sr-only">Mở trang tài khoản</span>
+          </Link>
           <form action={signOut} className="group-data-[collapsible=icon]:hidden">
             <button
               type="submit"

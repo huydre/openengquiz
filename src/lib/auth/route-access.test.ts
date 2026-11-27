@@ -24,7 +24,7 @@ describe("routeRedirect", () => {
   });
 
   it("lets guests open public pages, auth callbacks, shared sets, APIs and files", () => {
-    for (const path of ["/", "/login", "/auth/callback", "/shared/abc", "/api/tts", "/fonts/BeVietnamPro-Regular.ttf", "/robots.txt"]) {
+    for (const path of ["/", "/login", "/privacy", "/terms", "/auth/callback", "/shared/abc", "/api/tts", "/fonts/BeVietnamPro-Regular.ttf", "/robots.txt"]) {
       expect(routeRedirect(path, "", false)).toBeNull();
     }
   });

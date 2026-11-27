@@ -2,6 +2,16 @@
 
 Context: [plan.md](plan.md) · Research mục 5.2, 8.6, 9, 12
 
+## Tiến độ
+
+- [x] Security headers, `robots.txt`, `sitemap.xml` (bộ từ công khai), metadata + Open Graph cho bộ từ chia sẻ (bộ "có link" đặt noindex).
+- [x] Trang Chính sách bảo mật và Điều khoản (công khai), link ở footer landing và trang Tài khoản.
+- [x] Trang Tài khoản + tự xoá tài khoản (xoá ảnh tải lên, xoá user, cascade dữ liệu); chặn xoá tài khoản sở hữu nội dung khoá học.
+- [x] `pnpm build` production thành công; rà soát không có secret trong code client.
+- [x] Hướng dẫn deploy: [docs/deployment.md](../../docs/deployment.md).
+- [ ] Deploy Vercel (cần tài khoản của user), cấu hình Supabase URL, domain.
+- [ ] Sentry/analytics, nút "Báo sai", PWA, E2E trên CI, Lighthouse.
+
 ## Requirements
 
 - Landing (SSG): giới thiệu, demo flashcard/speaking, FAQ; trang bộ từ public render SSR có metadata (SEO + chia sẻ).

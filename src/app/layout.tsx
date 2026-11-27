@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Nunito } from "next/font/google";
 import "./globals.css";
+import { siteUrl } from "@/lib/site-url";
 
 // Rounded, friendly typeface with full Vietnamese diacritics support.
 const nunito = Nunito({
@@ -14,10 +15,15 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const description = "Flashcard, ôn tập ngắt quãng và luyện nói với AI bằng chính từ vựng bạn đang học. Miễn phí.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl()),
   title: { default: "OpenEngQuiz: Học từ vựng tiếng Anh miễn phí", template: "%s · OpenEngQuiz" },
-  description:
-    "Flashcard, ôn tập ngắt quãng và luyện nói với AI bằng chính từ vựng bạn đang học. Miễn phí.",
+  description,
+  applicationName: "OpenEngQuiz",
+  openGraph: { type: "website", siteName: "OpenEngQuiz", locale: "vi_VN", title: "OpenEngQuiz: Học từ vựng tiếng Anh miễn phí", description },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

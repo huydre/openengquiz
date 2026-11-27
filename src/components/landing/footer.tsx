@@ -16,6 +16,13 @@ const LINK_COLUMNS = [
     title: "Tài khoản",
     links: [{ label: "Đăng nhập", href: "/login" }],
   },
+  {
+    title: "Pháp lý",
+    links: [
+      { label: "Chính sách bảo mật", href: "/privacy" },
+      { label: "Điều khoản sử dụng", href: "/terms" },
+    ],
+  },
 ];
 
 export default function Footer() {
@@ -41,7 +48,7 @@ export default function Footer() {
             </Link>
           </div>
 
-          <nav aria-label="Liên kết cuối trang" className="grid grid-cols-2 gap-8 lg:col-span-6 lg:pl-8">
+          <nav aria-label="Liên kết cuối trang" className="grid grid-cols-2 gap-8 sm:grid-cols-3 lg:col-span-6 lg:pl-8">
             {LINK_COLUMNS.map((col) => (
               <div key={col.title} className="flex flex-col gap-5">
                 <SectionLabel>{col.title}</SectionLabel>
