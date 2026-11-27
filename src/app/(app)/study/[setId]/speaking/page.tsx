@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { z } from "zod";
@@ -26,10 +25,7 @@ async function Content({ params }: { params: Params }) {
   if (set.error || cards.error) throw new Error("Không tải được bộ từ.");
   if (!set.data) notFound();
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
-      <Link className="text-sm font-bold underline" href={`/sets/${id.data}`}>Về bộ từ: {set.data.title}</Link>
-      <SpeakingPractice mode="speaking" enabled={isSpeechServiceConfigured()} ai={isAiConfigured()}
-        browserStt={!process.env.GROQ_API_KEY && !process.env.SPEECH_SERVICE_URL} cards={cards.data} />
-    </div>
+    <SpeakingPractice mode="speaking" setId={id.data} setTitle={set.data.title} enabled={isSpeechServiceConfigured()} ai={isAiConfigured()}
+      browserStt={!process.env.GROQ_API_KEY && !process.env.SPEECH_SERVICE_URL} cards={cards.data} />
   );
 }

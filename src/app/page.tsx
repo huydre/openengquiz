@@ -1,19 +1,25 @@
-import Features from "@/components/landing/features";
 import Footer from "@/components/landing/footer";
-import Hero from "@/components/landing/hero";
-import Navbar from "@/components/landing/navbar";
-import Stats from "@/components/landing/stats";
+import { LandingFaq, LandingNewsletter, LandingTestimonials } from "@/components/landing/landing-extras";
+import { LandingHero } from "@/components/landing/landing-hero";
+import { LandingNavigation } from "@/components/landing/landing-navigation";
+import { LandingProgressFeature } from "@/components/landing/landing-progress-feature";
+import { LandingCoursePath, LandingFeatures, LandingFinalCta, LandingSteps } from "@/components/landing/landing-sections";
 
-// Dark landing built from Watermelon's landing-01 template. Only this page uses the `dark` theme;
-// the login page and the app keep the light edtech style.
+// Public landing in the app's own style; follows the visitor's light or dark theme.
 export default function LandingPage() {
   return (
-    <div className="dark bg-[#101010] text-foreground flex flex-1 flex-col overflow-x-hidden">
-      <Navbar />
+    <div className="flex flex-1 flex-col overflow-x-clip">
+      <LandingNavigation />
       <main>
-        <Hero />
-        <Stats />
-        <Features />
+        <LandingHero />
+        <LandingSteps />
+        <LandingFeatures />
+        <LandingProgressFeature />
+        <LandingCoursePath />
+        <LandingTestimonials />
+        <LandingNewsletter />
+        <LandingFaq />
+        <LandingFinalCta />
       </main>
       <Footer />
     </div>

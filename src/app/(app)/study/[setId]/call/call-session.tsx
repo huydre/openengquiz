@@ -1,19 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-  ArrowLeft, Check, CircleAlert, Hand, History, Keyboard, MessageSquareText, Mic, MicOff, Phone, PhoneOff, RotateCcw, SendHorizontal, Square, Volume2,
+  Check, CircleAlert, ClipboardCheck, Hand, History, Keyboard, MessageSquareText, Mic, MicOff, Phone, PhoneOff, RotateCcw, SendHorizontal, Square, Volume2, Waves, X,
 } from "lucide-react";
 import { LogoLoader } from "@/components/layout/logo-loader";
 import { TutorAvatar } from "@/components/tutor/tutor-avatar";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { cleanCallText } from "./call-client";
 import { CallHelp, CallWords, EvaluateCallReply } from "./call-message-tools";
 import { CallOrb, type CallOrbMode } from "./call-orb";
 import { useCallSession, type CallSessionOptions } from "./use-call-session";
+
+const CALL_STEPS = [
+  { icon: Phone, title: "Gia sư nói trước", text: "Nghe câu hỏi, có thể nghe lại hoặc xem bản dịch." },
+  { icon: Waves, title: "Nói rảnh tay", text: "Nói xong dừng một chút, câu tự gửi đi." },
+  { icon: ClipboardCheck, title: "Nhận tổng kết", text: "Từ đã dùng, lỗi cần sửa và gợi ý lần sau." },
+];
 
 export type CallSessionProps = CallSessionOptions & {
   setTitle: string;
@@ -69,17 +74,30 @@ export function CallSession(props: CallSessionProps) {
   return (
     <div className="mx-auto w-full max-w-5xl space-y-4">
       {!inLesson ? (
-        <header className="flex flex-wrap items-center gap-3">
-          <Link href={`/sets/${setId}`} aria-label="Về bộ từ" className={buttonVariants({ variant: "ghost", size: "icon" })}>
-            <ArrowLeft />
+        <header className="flex items-center gap-3">
+          <Link
+            href={`/sets/${setId}`}
+            aria-label={`Thoát, về bộ từ ${setTitle}`}
+            className="text-muted-foreground hover:bg-muted hover:text-foreground grid size-10 shrink-0 place-items-center rounded-xl transition-colors"
+          >
+            <X className="size-6" aria-hidden="true" />
           </Link>
           <div className="min-w-0 flex-1">
             <p className="text-muted-foreground text-xs font-extrabold tracking-wide uppercase">Hội thoại AI</p>
-            <h1 className="truncate text-xl font-black">{setTitle}</h1>
+            <p className="truncate font-black">{setTitle}</p>
           </div>
-          {assistant && !summary ? turnPill : null}
-          <Link href="/history" className={buttonVariants({ variant: "outline", size: "sm" })}>
-            <History /> Lịch sử
+          {assistant && !summary ? (
+            <div className="hidden items-center gap-2 sm:flex" aria-label={`Đã nói ${call.userTurns} trên ${maxTurns} lượt`}>
+              <span className="flex gap-1" aria-hidden="true">
+                {Array.from({ length: maxTurns }, (_, index) => (
+                  <span key={index} className={cn("h-2 w-2.5 rounded-full", index < call.userTurns ? "bg-primary" : "bg-muted")} />
+                ))}
+              </span>
+              <span className="text-muted-foreground text-sm font-black tabular-nums">{call.userTurns}/{maxTurns}</span>
+            </div>
+          ) : null}
+          <Link href="/history" className="hover:bg-muted flex h-10 items-center gap-2 rounded-2xl border-2 px-4 text-sm font-extrabold shadow-[0_3px_0_var(--border)] active:translate-y-0.5 active:shadow-none">
+            <History className="size-4" aria-hidden="true" /> Lịch sử
           </Link>
         </header>
       ) : null}
@@ -121,7 +139,7 @@ export function CallSession(props: CallSessionProps) {
         view === "call" ? (
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
             <CallStage call={call} inLesson={inLesson} turnPill={turnPill} />
-            <aside aria-label="Trợ giúp" className="bg-card h-fit rounded-3xl border-2 p-4">
+            <aside aria-label="Trợ giúp" className="bg-card h-fit rounded-[2rem] border-2 p-5 shadow-[0_6px_0_var(--border)]">
               <CallHelp
                 key={`${call.threadId}:${assistantIndex}`}
                 threadId={call.threadId}
@@ -176,17 +194,19 @@ function CallStage({ call, inLesson, turnPill }: { call: Call; inLesson: boolean
   return (
     <section
       aria-label="Màn gọi điện"
-      className="from-sidebar-accent/70 via-card to-card relative flex min-h-[560px] flex-col items-center rounded-3xl border-2 bg-gradient-to-b p-5"
+      className="from-sidebar-accent/70 via-card to-card relative flex min-h-[560px] flex-col items-center overflow-hidden rounded-[2rem] border-2 bg-gradient-to-b p-5 shadow-[0_6px_0_var(--border)]"
     >
-      <div className="flex w-full items-center justify-between gap-2">
-        <span className="text-muted-foreground inline-flex items-center gap-1.5 text-sm font-bold">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 [background-image:radial-gradient(var(--border)_1.5px,transparent_1.5px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_45%,black,transparent)]" />
+      <div className="relative flex w-full items-center justify-between gap-2">
+        <span className="bg-card/80 inline-flex items-center gap-2 rounded-full border-2 px-3 py-1 text-sm font-extrabold">
           <span className={cn("size-2 rounded-full", ended ? "bg-muted-foreground" : "bg-primary animate-pulse motion-reduce:animate-none")} />
           {ended ? "Đã xong" : "Đang gọi"}
+          {!ended ? <CallTimer /> : null}
         </span>
         {inLesson ? turnPill : null}
       </div>
 
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 py-4">
+      <div className="relative flex flex-1 flex-col items-center justify-center gap-4 py-4">
         {call.consent ? (
           <div className="bg-card flex max-w-sm flex-col items-center gap-3 rounded-3xl border-2 p-6 text-center shadow-sm">
             <span className="bg-secondary/15 grid size-14 place-items-center rounded-2xl"><Mic aria-hidden="true" className="text-secondary size-7" /></span>
@@ -219,7 +239,7 @@ function CallStage({ call, inLesson, turnPill }: { call: Call; inLesson: boolean
         )}
       </div>
 
-      <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2">
+      <div className="relative grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2">
         <Button
           variant="ghost"
           onClick={call.pauseCall}
@@ -247,6 +267,17 @@ function CallStage({ call, inLesson, turnPill }: { call: Call; inLesson: boolean
       </div>
     </section>
   );
+}
+
+/** Elapsed call time (mm:ss), counted from when the call screen appears. */
+function CallTimer() {
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    const started = Date.now();
+    const timer = window.setInterval(() => setSeconds(Math.floor((Date.now() - started) / 1000)), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+  return <span className="text-muted-foreground tabular-nums">· {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}</span>;
 }
 
 /** Round talk button: speak, interrupt, or stop and send. */
@@ -432,36 +463,56 @@ function StartCard({ title, inLesson, scenarios, scenario, onScenario, lockScena
 }) {
   const disabled = Boolean(disabledReason) || busy;
   return (
-    <section className="from-sidebar-accent/70 to-card mx-auto flex max-w-xl flex-col items-center gap-5 rounded-3xl border-2 bg-gradient-to-b p-8 text-center">
+    <section className="from-sidebar-accent/70 to-card relative mx-auto flex max-w-2xl flex-col items-center gap-6 overflow-hidden rounded-[2rem] border-2 bg-gradient-to-b p-8 text-center shadow-[0_6px_0_var(--border)]">
       <CallOrb mode={busy ? "thinking" : "idle"} level={0} onTap={onCall} disabled={disabled} label="Bắt đầu cuộc gọi" />
       <div className="space-y-1">
-        <h2 className="text-2xl font-black">{busy ? "Đang kết nối với gia sư..." : "Gọi điện luyện nói"}</h2>
-        <p className="text-muted-foreground font-semibold">
-          {inLesson ? scenarios[0]?.label : <>Trò chuyện về <span className="text-foreground">{title}</span>,</>} {maxTurns} lượt, gia sư nói trước.
+        <h1 className="text-3xl font-black tracking-tight">{busy ? "Đang kết nối với gia sư..." : "Gọi điện luyện nói"}</h1>
+        <p className="text-muted-foreground text-lg font-semibold">
+          {inLesson ? scenarios[0]?.label : <>Trò chuyện về <span className="text-foreground">{title}</span></>} · {maxTurns} lượt nói
         </p>
       </div>
 
       {!inLesson && scenarios.length > 1 ? (
-        <div className="w-full max-w-xs space-y-1.5 text-left">
-          <label htmlFor="call-scenario" className="text-sm font-extrabold">Tình huống</label>
-          <Select value={scenario} onValueChange={onScenario} disabled={lockScenario}>
-            <SelectTrigger id="call-scenario" className="w-full">
-              <SelectValue placeholder="Chọn tình huống" />
-            </SelectTrigger>
-            <SelectContent>
-              {scenarios.map(({ id, label }) => <SelectItem key={id} value={id}>{label}</SelectItem>)}
-            </SelectContent>
-          </Select>
+        <div className="w-full space-y-2">
+          <p id="call-scenario" className="text-sm font-extrabold">Chọn tình huống</p>
+          <div role="radiogroup" aria-labelledby="call-scenario" className="flex flex-wrap justify-center gap-2">
+            {scenarios.map(({ id, label }) => (
+              <button
+                key={id}
+                type="button"
+                role="radio"
+                aria-checked={scenario === id}
+                disabled={lockScenario}
+                onClick={() => onScenario(id)}
+                className={cn(
+                  "rounded-2xl border-2 px-4 py-2 text-sm font-extrabold transition-colors disabled:opacity-50",
+                  scenario === id ? "border-primary bg-primary/12 text-primary-edge" : "bg-card hover:bg-muted",
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       ) : null}
 
+      <ul className="grid w-full gap-2 text-left sm:grid-cols-3">
+        {CALL_STEPS.map(({ icon: Icon, title: stepTitle, text }) => (
+          <li key={stepTitle} className="bg-card/80 rounded-2xl border-2 p-3">
+            <Icon className="text-primary size-5" aria-hidden="true" />
+            <p className="mt-1.5 text-sm font-black">{stepTitle}</p>
+            <p className="text-muted-foreground text-xs font-semibold">{text}</p>
+          </li>
+        ))}
+      </ul>
+
       {disabledReason ? <Banner tone="info">{disabledReason}</Banner> : null}
 
-      <div className="flex w-full max-w-xs flex-col gap-2">
-        <Button size="lg" disabled={disabled} onClick={onCall}>
+      <div className="flex w-full flex-col gap-3 sm:flex-row sm:justify-center">
+        <Button size="lg" className="h-14 px-8 text-base" disabled={disabled} onClick={onCall}>
           {busy ? <LogoLoader size="sm" label="" /> : <Phone />} Bắt đầu cuộc gọi
         </Button>
-        <Button size="lg" variant="outline" disabled={disabled} onClick={onChat}>
+        <Button size="lg" variant="outline" className="h-14 px-8 text-base" disabled={disabled} onClick={onChat}>
           <Keyboard /> Nhắn tin thay vì gọi
         </Button>
       </div>
@@ -476,13 +527,19 @@ function SummaryCard({ summary, inLesson, onNew }: {
   onNew: () => void;
 }) {
   return (
-    <section className="bg-card mx-auto max-w-2xl space-y-5 rounded-3xl border-2 p-6">
-      <div className="flex items-start gap-3">
-        <TutorAvatar className="size-12 rounded-2xl" />
-        <div className="space-y-1">
-          <h2 className="text-2xl font-black">Tổng kết cuộc gọi</h2>
-          <p className="text-muted-foreground">{cleanCallText(summary.note_vi)}</p>
-        </div>
+    <section className="bg-card mx-auto max-w-2xl space-y-6 rounded-[2rem] border-2 p-6 shadow-[0_6px_0_var(--border)] sm:p-8">
+      <div className="flex flex-col items-center gap-3 text-center">
+        <TutorAvatar className="size-16 rounded-3xl" />
+        <h2 className="text-3xl font-black tracking-tight">Tổng kết cuộc gọi</h2>
+        <p className="text-muted-foreground max-w-lg text-lg">{cleanCallText(summary.note_vi)}</p>
+      </div>
+      <div className="grid grid-cols-3 gap-3 text-center">
+        <SummaryStat value={`${summary.used_terms.length}/${summary.used_terms.length + summary.unused_terms.length}`} label="Từ đã dùng" />
+        <SummaryStat value={summary.errors.length} label="Lỗi được sửa" />
+        <SummaryStat
+          value={summary.used_terms.length + summary.unused_terms.length ? `${Math.round((summary.used_terms.length / (summary.used_terms.length + summary.unused_terms.length)) * 100)}%` : "–"}
+          label="Mục tiêu từ"
+        />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -517,6 +574,15 @@ function SummaryCard({ summary, inLesson, onNew }: {
         <Button size="lg" onClick={onNew}><RotateCcw /> Cuộc gọi mới</Button>
       ) : null}
     </section>
+  );
+}
+
+function SummaryStat({ value, label }: { value: React.ReactNode; label: string }) {
+  return (
+    <div className="bg-muted/60 rounded-2xl p-3">
+      <p className="text-2xl font-black tabular-nums">{value}</p>
+      <p className="text-muted-foreground text-xs font-extrabold uppercase">{label}</p>
+    </div>
   );
 }
 

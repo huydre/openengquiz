@@ -10,7 +10,8 @@
     "test": "vitest run",
     "typecheck": "next typegen && tsc --noEmit",
     "seed:courses": "bun --conditions=react-server scripts/seed-courses.ts",
-    "seed:lesson-activities": "bun --conditions=react-server scripts/seed-lesson-activities.ts"
+    "seed:lesson-activities": "bun --conditions=react-server scripts/seed-lesson-activities.ts",
+    "seed:card-gifs": "bun --conditions=react-server scripts/seed-card-gifs.ts"
   },
   "dependencies": {
     "@ai-sdk/deepseek": "^3.0.91",
@@ -26,6 +27,7 @@
     "ai": "^7.0.183",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.2",
+    "gsap": "^3.15.1",
     "lucide-react": "^1.81.0",
     "motion": "^14.14.0",
     "next": "16.4.6",
@@ -43,6 +45,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@ai-sdk/openai-compatible": "^3.0.96",
     "@tailwindcss/turbopack": "4.3.3",
     "@types/node": "^20",
     "@types/react": "^19",

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist_Mono, Nunito } from "next/font/google";
 import "./globals.css";
 import { siteUrl } from "@/lib/site-url";
+import { ThemeProvider } from "@/components/theme/theme-provider";
 
 // Rounded, friendly typeface with full Vietnamese diacritics support.
 const nunito = Nunito({
@@ -37,7 +38,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
-        {children}
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

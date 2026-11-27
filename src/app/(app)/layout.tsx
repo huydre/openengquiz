@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { LogoLoader } from "@/components/layout/logo-loader";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
@@ -32,6 +33,7 @@ async function SignedInShell({ children }: { children: React.ReactNode }) {
       <SidebarInset>
         <header className="flex h-12 items-center gap-2 border-b px-3">
           <SidebarTrigger aria-label="Mở hoặc thu gọn menu" />
+          <ThemeToggle className="ml-auto" />
         </header>
         <div className="flex-1 p-4 md:p-8">{children}</div>
       </SidebarInset>

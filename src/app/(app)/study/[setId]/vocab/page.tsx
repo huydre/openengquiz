@@ -22,7 +22,7 @@ async function LessonContent({ params }: { params: Promise<{ setId: string }> })
   if (!set) notFound();
 
   const { data: cards, error } = await supabase.from("cards")
-    .select("id, term, ipa, part_of_speech, definition_vi, definition_en, example_en, example_vi, synonyms")
+    .select("id, term, ipa, part_of_speech, definition_vi, definition_en, example_en, example_vi, synonyms, image_url")
     .eq("set_id", setId).order("position").order("created_at").order("id");
   if (error) throw new Error("Không tải được thẻ.");
 

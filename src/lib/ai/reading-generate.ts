@@ -7,6 +7,7 @@ import {
   MAX_TARGET_TERMS,
   MIN_TARGET_TERMS,
   readingPassageSchema,
+  shuffleQuestionOptions,
   type CefrLevel,
   type ReadingPassage,
   type ReadingQuestion,
@@ -139,7 +140,7 @@ export async function generateReadingPassage(
     }
     const { matched, missing } = checkTargetTerms(passage.content, terms);
     if (matched.length === terms.length) {
-      return { passage, matched, missing };
+      return { passage: { ...passage, questions: passage.questions.map((question) => shuffleQuestionOptions(question)) }, matched, missing };
     }
     retryHint += " The previous passage omitted some target words. Include every input term verbatim in the new passage.";
     lastError = new Error(`Passage uses ${matched.length}/${terms.length} target terms`);
