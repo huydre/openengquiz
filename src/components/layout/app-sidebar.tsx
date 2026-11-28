@@ -100,7 +100,7 @@ function NavGroup({ label, items, pathname }: { label: string; items: NavItem[];
   );
 }
 
-export function AppSidebar({ displayName }: { displayName: string }) {
+export function AppSidebar({ displayName, avatarUrl }: { displayName: string; avatarUrl?: string }) {
   const pathname = usePathname();
   const learn = NAV_ITEMS.filter((item) => LEARN.has(item.href));
   const tools = NAV_ITEMS.filter((item) => !LEARN.has(item.href));
@@ -142,12 +142,17 @@ export function AppSidebar({ displayName }: { displayName: string }) {
         </FeedbackDialog>
         <div className="flex items-center gap-3 rounded-2xl border-2 p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:p-0">
           <Link href="/account" title="Tài khoản" className="flex min-w-0 flex-1 items-center gap-3 rounded-xl outline-none focus-visible:ring-2 group-data-[collapsible=icon]:flex-none">
-            <span
-              aria-hidden="true"
-              className="bg-secondary text-secondary-foreground grid size-9 shrink-0 place-items-center rounded-full text-sm font-black"
-            >
-              {initials(displayName)}
-            </span>
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- Google profile photo, external and tiny
+              <img src={avatarUrl} alt="" referrerPolicy="no-referrer" className="size-9 shrink-0 rounded-full object-cover" />
+            ) : (
+              <span
+                aria-hidden="true"
+                className="bg-secondary text-secondary-foreground grid size-9 shrink-0 place-items-center rounded-full text-sm font-black"
+              >
+                {initials(displayName)}
+              </span>
+            )}
             <span className="min-w-0 flex-1 truncate text-sm font-bold group-data-[collapsible=icon]:hidden">
               {displayName}
             </span>
