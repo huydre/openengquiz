@@ -9,6 +9,7 @@ import { expectedAnswer, gradeAttempt } from "@/lib/study/answer-matcher";
 import { cardDefinition, type StudyAttempt, type StudyCard } from "@/lib/study/study-types";
 import type { StudyQuestion as Question } from "@/lib/study/build-questions";
 import { playTts } from "@/lib/speech/play-tts";
+import { Ipa } from "@/components/vocab/ipa-text";
 
 type Props = {
   question: Question;
@@ -70,10 +71,13 @@ export function StudyQuestion({ question, card, cards, onAnswer }: Props) {
   const correct = picked === null ? null : gradeAttempt(attemptFor(picked), card);
   const expected = expectedAnswer(attemptFor(picked ?? ""), card);
 
+  const englishChoices = question.type === "match";
   const answer = useCallback((value: string) => {
     if (picked !== null) return;
     setPicked(value);
-  }, [picked]);
+    // English answer choices are read aloud when picked, like a flashcard.
+    if (englishChoices) void playTts(value);
+  }, [picked, englishChoices]);
 
   // Speed game: a ticking timer that answers blank at zero, and a short flash before moving on.
   useEffect(() => {
@@ -178,9 +182,11 @@ export function StudyQuestion({ question, card, cards, onAnswer }: Props) {
                   index={index}
                   label={choice.label}
                   state={choiceState(choice.label)}
-                  english={question.type === "match"}
-                  disabled={picked !== null}
-                  onClick={() => answer(choice.label)}
+                  english={englishChoices}
+                  ipa={englishChoices ? [card, ...cards].find((item) => item.id === choice.id)?.ipa : undefined}
+                  // After answering, English choices stay clickable to hear them again.
+                  disabled={picked !== null && !englishChoices}
+                  onClick={() => (picked === null ? answer(choice.label) : void playTts(choice.label))}
                 />
               ))}
             </div>
@@ -315,9 +321,10 @@ function Prompt({ question, card, statement, onSpeak }: { question: Question; ca
 
 type TileState = "idle" | "correct" | "wrong" | "answer" | "dim";
 
-function ChoiceTile({ index, label, state, disabled, english = false, icon, onClick }: {
+function ChoiceTile({ index, label, state, disabled, english = false, ipa, icon, onClick }: {
   index: number;
   label: string;
+  ipa?: string | null;
   state: TileState;
   disabled: boolean;
   english?: boolean;
@@ -348,7 +355,11 @@ function ChoiceTile({ index, label, state, disabled, english = false, icon, onCl
       >
         {state === "correct" || state === "answer" ? <Check className="size-4" /> : state === "wrong" ? <X className="size-4" /> : icon ?? index + 1}
       </span>
-      <span className="min-w-0 flex-1 break-words">{label}</span>
+      <span className="min-w-0 flex-1 break-words">
+        {label}
+        {ipa ? <Ipa value={ipa} className="block text-sm font-semibold opacity-70" /> : null}
+      </span>
+      {english && state !== "idle" ? <Volume2 className="size-4 shrink-0 opacity-60" aria-hidden="true" /> : null}
     </button>
   );
 }
