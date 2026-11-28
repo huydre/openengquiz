@@ -5,7 +5,6 @@ import { z } from "zod";
 import { cardTermKey, MAX_GENERATED_CARDS, readSetTerms } from "@/lib/ai/generated-card-data";
 import { createClient } from "@/lib/supabase/server";
 import { cardSchema, type CardInput } from "@/lib/vocab/card-schema";
-import { parseBulkCards } from "@/lib/vocab/parse-bulk-cards";
 
 type Result = { error?: string };
 
@@ -85,25 +84,6 @@ export async function moveCard(setId: string, cardId: string, direction: -1 | 1)
   return {};
 }
 
-export async function bulkImportCards(setId: string, input: string): Promise<Result> {
-  const parsed = parseBulkCards(input);
-  if (parsed.errors.length) return { error: `Sửa dòng ${parsed.errors[0].line} trước khi nhập.` };
-  if (!parsed.cards.length) return { error: "Chưa có thẻ để nhập." };
-  if (parsed.cards.length > 500) return { error: "Mỗi lần nhập tối đa 500 thẻ." };
-  const supabase = await ownedSet(setId);
-  if (!supabase) return { error: "Bạn không có quyền sửa bộ từ này." };
-  const { data: last, error: orderError } = await supabase.from("cards")
-    .select("position").eq("set_id", setId).order("position", { ascending: false }).limit(1).maybeSingle();
-  if (orderError) return { error: "Không đọc được thứ tự thẻ." };
-  const start = (last?.position ?? -1) + 1;
-  const { error } = await supabase.from("cards").insert(parsed.cards.map((card, index) => ({
-    ...card, set_id: setId, position: start + index,
-  })));
-  if (error) return { error: "Không nhập được thẻ. Hãy thử lại." };
-  revalidatePath(`/sets/${setId}`);
-  return {};
-}
-
 export async function bulkAddCards(setId: string, cards: CardInput[]): Promise<Result> {
   const parsed = z.array(cardSchema).min(1, "Chưa có thẻ để thêm.")
     .max(MAX_GENERATED_CARDS, "Mỗi lần thêm tối đa 50 thẻ.").safeParse(cards);
@@ -137,6 +117,81 @@ export async function bulkAddCards(setId: string, cards: CardInput[]): Promise<R
   if (error) return { error: "Không thêm được thẻ. Hãy thử lại." };
   revalidatePath(`/sets/${setId}`);
   return {};
+}
+
+const vocabImportSchema = z.object({
+  setId: z.uuid("Mã bộ từ không hợp lệ.").optional(),
+  title: z.string().trim().max(200, "Tên bộ từ tối đa 200 ký tự.").optional(),
+  cards: z.array(cardSchema).min(1, "Chưa có thẻ để nhập.").max(500, "Mỗi lần nhập tối đa 500 thẻ."),
+});
+
+export async function importVocabCards(input: { setId?: string; title?: string; cards: CardInput[] }): Promise<
+  { setId: string; added: number; duplicates: string[] } | { error: string }
+> {
+  const parsed = vocabImportSchema.safeParse(input);
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  const { setId, title, cards } = parsed.data;
+
+  const supabase = setId ? await ownedSet(setId) : await createClient();
+  if (!supabase) return { error: "Bạn không có quyền sửa bộ từ này." };
+  const seen = new Set<string>();
+  let start = 0;
+  if (setId) {
+    try {
+      for (const term of await readSetTerms(supabase, setId)) seen.add(cardTermKey(term));
+    } catch {
+      return { error: "Không kiểm tra được thẻ trùng. Hãy thử lại." };
+    }
+  }
+  // ponytail: Same concurrent-write ceiling as bulkAddCards; use an RPC if imports must serialize.
+  const duplicates: string[] = [];
+  const unique = cards.filter((card) => {
+    const key = cardTermKey(card.term);
+    if (seen.has(key)) {
+      duplicates.push(card.term);
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+
+  let targetId: string;
+  let newSetOwner: string | undefined;
+  if (setId) {
+    if (!unique.length) return { setId, added: 0, duplicates };
+    const { data: last, error } = await supabase.from("cards")
+      .select("position").eq("set_id", setId).order("position", { ascending: false }).limit(1).maybeSingle();
+    if (error) return { error: "Không đọc được thứ tự thẻ." };
+    start = (last?.position ?? -1) + 1;
+    targetId = setId;
+  } else {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return { error: "Vui lòng đăng nhập lại." };
+    const { data: set, error } = await supabase.from("study_sets").insert({
+      owner_id: user.id, title: title || "Bộ từ nhập từ file", description: "", visibility: "private",
+    }).select("id").single();
+    if (error) return { error: "Không tạo được bộ từ. Hãy thử lại." };
+    targetId = set.id;
+    newSetOwner = user.id;
+  }
+
+  const { error } = await supabase.from("cards").insert(unique.map((card, index) => ({
+    ...card, set_id: targetId, position: start + index,
+  })));
+  if (error) {
+    if (newSetOwner) {
+      const { data: removed, error: rollbackError } = await supabase.from("study_sets").delete()
+        .eq("id", targetId).eq("owner_id", newSetOwner).select("id").maybeSingle();
+      if (rollbackError || !removed) {
+        revalidatePath("/sets");
+        return { error: "Không nhập được thẻ và không xoá được bộ từ vừa tạo. Kiểm tra danh sách bộ từ." };
+      }
+    }
+    return { error: "Không nhập được thẻ. Hãy thử lại." };
+  }
+  revalidatePath("/sets");
+  revalidatePath(`/sets/${targetId}`);
+  return { setId: targetId, added: unique.length, duplicates };
 }
 
 const imageUrlSchema = z.url({ protocol: /^https$/ }).max(1000).nullable();

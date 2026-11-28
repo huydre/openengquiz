@@ -6,7 +6,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { SetMenu, SetSettings } from "../set-management";
 import { CardList } from "../card-list";
 import { CardEditor } from "../card-editor";
-import { BulkImport } from "../bulk-import";
+import { VocabImport } from "@/components/sets/vocab-import";
 import { FlashcardViewer } from "../flashcard-viewer";
 import { EnrollSetButton } from "../enroll-set-button";
 import type { CardRecord } from "../card-record";
@@ -165,7 +165,7 @@ async function SetDetail({ params }: { params: Promise<{ id: string }> }) {
             </div>
             <CardEditor setId={id} />
           </section>
-          <BulkImport setId={id} />
+          <VocabImport setId={id} />
         </>
       ) : null}
     </div>
