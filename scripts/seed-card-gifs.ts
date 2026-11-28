@@ -1,20 +1,24 @@
+import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 import { createAdminClient } from "../src/lib/supabase/admin";
 import { GiphyRateLimitError, searchGiphy } from "../src/lib/media/giphy";
 
 /**
  * Adds GIFs to course and curated path vocabulary. Existing images stay untouched, including
- * learner and editor choices. Searches share a query for duplicate terms.
+ * learner and editor choices. Searches share a query for duplicate terms. Terms Giphy has no GIF
+ * for are listed in --skip-file so later runs spend their hourly quota on new terms.
  *
  *   bun scripts/seed-card-gifs.ts --dry-run
  *   bun scripts/seed-card-gifs.ts --limit 90 --delay 37000
  */
 async function main() {
   const { values } = parseArgs({
-    options: { "dry-run": { type: "boolean" }, limit: { type: "string", default: "90" }, delay: { type: "string", default: "37000" } },
+    options: { "dry-run": { type: "boolean" }, limit: { type: "string", default: "90" }, delay: { type: "string", default: "37000" }, "skip-file": { type: "string", default: ".seed-card-gifs-no-gif.txt" } },
   });
   const limit = Number(values.limit);
   const delayMs = Number(values.delay);
+  const skipFile = values["skip-file"]!;
+  const skipped = new Set(existsSync(skipFile) ? readFileSync(skipFile, "utf8").split("\n").filter(Boolean) : []);
   const apiKey = process.env.GIPHY_API_KEY;
   const supabase = createAdminClient();
   if (!supabase || !apiKey) throw new Error("Configure Supabase and GIPHY_API_KEY.");
@@ -39,12 +43,12 @@ async function main() {
   const byQuery = new Map<string, { noun: boolean; ids: string[] }>();
   for (const card of cards) {
     const query = card.term.toLowerCase().replace(/[^\p{L}\p{N}' ]+/gu, " ").replace(/\s+/g, " ").trim();
-    if (!query) continue;
+    if (!query || skipped.has(query)) continue;
     const entry = byQuery.get(query) ?? { noun: /noun|danh từ/i.test(card.part_of_speech ?? ""), ids: [] };
     entry.ids.push(card.id);
     byQuery.set(query, entry);
   }
-  console.log(`${setIds.length} course and path sets, ${cards.length} cards without an image, ${byQuery.size} distinct terms.`);
+  console.log(`${setIds.length} course and path sets, ${cards.length} cards without an image, ${byQuery.size} distinct terms to search (${skipped.size} skipped, no GIF).`);
   if (values["dry-run"]) return;
 
   let searched = 0;
@@ -70,7 +74,7 @@ async function main() {
       console.error(`Search failed for "${query}":`, error instanceof Error ? error.message : error);
       continue;
     }
-    if (!url) { missing += 1; console.log(`[${searched}] ${query} -> no GIF`); continue; }
+    if (!url) { missing += 1; appendFileSync(skipFile, `${query}\n`); console.log(`[${searched}] ${query} -> no GIF`); continue; }
     const { error } = await supabase.from("cards").update({ image_url: url }).in("id", ids).is("image_url", null);
     if (error) console.error(`Update failed for "${query}":`, error.message);
     else updated += ids.length;
