@@ -103,6 +103,7 @@ Code từ registry giữ nguyên bản gốc. `eslint.config.mjs` hạ `react-ho
 ## Học và streak
 
 - Phiên Học chỉ hoàn tất khi mọi thẻ qua nhận diện rồi nhớ lại. Ôn sai hủy trạng thái thuộc của thẻ đó.
+- Meaning Recall chấm cục bộ với `gradeMeaningLocally`. Chỉ gửi `unsure` đến `POST /api/courses/meaning-check` (`cardId`, `answer` tối đa 120 ký tự). Server đọc thẻ khóa học theo quyền người học; cache chỉ service role truy cập. Lượt chấm AI thành công trên cache miss tính vào quota 200 lượt/ngày theo giờ Việt Nam; `source: "unavailable"` vẫn cho phép người học tự xác nhận.
 - `sync_streak()` tính ngày Việt Nam có `user_daily_activity.reviews + studied > 0` hoặc có hoạt động khóa học hoàn tất (`course_activity_progress.completed_at`). Mỗi ngày chỉ tính một lần. Hoạt động khóa học không tăng `reviews` hay `studied`; ngày đóng băng giữ chuỗi nhưng không tạo hoạt động thật hay XP.
 - Bảng hạng tuần dùng `reviews + studied + 10 × số hoạt động khóa học hoàn tất + 5 × số lượt luyện nói`, tính từ thứ Hai 00:00 đến trước thứ Hai kế tiếp theo giờ Việt Nam. `studied` hiện đếm phiên đã lưu, không đếm thẻ.
 

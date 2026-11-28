@@ -264,7 +264,7 @@ export function recallMasteryCount(state: RecallQueueState, total = 4): { master
 // Vietnamese meaning matching (recall step answers)
 // ---------------------------------------------------------------------------
 
-/** Lowercase, strip diacritics-insensitive punctuation and collapse spaces. */
+/** Normalize case, punctuation and spaces without folding Vietnamese marks. */
 export function normalizeMeaning(value: string): string {
   return value
     .normalize("NFKC")
@@ -305,24 +305,69 @@ export function vietnameseMeanings(definitionVi: string): string[] {
     .filter((part) => part.length > 0);
 }
 
+const MEANING_FILLER: Record<string, true> = {
+  việc: true, sự: true, cái: true, người: true, một: true, các: true, những: true,
+  hoặc: true, và: true, của: true, để: true, là: true, được: true, khác: true, phần: true,
+  quả: true, trái: true,
+};
+const MEANING_FILLER_ASCII = Object.fromEntries(Object.keys(MEANING_FILLER).map((word) => [stripMeaningMarks(word), true as const]));
+const NEGATION: Record<string, true> = { không: true, chẳng: true, chưa: true, đừng: true, khong: true, chang: true, chua: true, dung: true };
+
+function stripMeaningMarks(value: string): string {
+  return value.normalize("NFD").replace(/\p{M}/gu, "").replaceAll("đ", "d");
+}
+
+function meaningSyllables(value: string, filler: Readonly<Record<string, true>>): string[] {
+  return value.split(" ").filter((word) => /\p{L}/u.test(word) && !Object.hasOwn(filler, word));
+}
+
 /**
- * Whether a typed Vietnamese answer matches one of the expected meanings.
- * `expectedVi` may itself contain several listed senses (comma/semicolon/
- * slash separated); `alternates` adds more accepted senses. Tolerant of
- * punctuation, case, extra whitespace and small typos on longer answers;
- * strict enough that unrelated meanings fail.
+ * `expectedVi` can list senses separated by comma, semicolon or slash.
+ * `alternates` can supply the English definition and synonyms.
+ * Only `unsure` should fall through to semantic grading.
  */
-export function matchVietnameseMeaning(answer: string, expectedVi: string, alternates: readonly string[] = []): boolean {
+export function gradeMeaningLocally(
+  answer: string,
+  expectedVi: string,
+  alternates: readonly string[] = [],
+): "correct" | "wrong" | "unsure" {
   const normalized = normalizeMeaning(answer);
-  if (!normalized) return false;
-  const candidates = [...vietnameseMeanings(expectedVi), ...alternates].map(normalizeMeaning).filter(Boolean);
+  if (!normalized) return "wrong";
+  const senses = vietnameseMeanings(expectedVi).map(normalizeMeaning).filter(Boolean);
+  const candidates = [...senses, ...alternates.map(normalizeMeaning).filter(Boolean)];
+  const unaccented = stripMeaningMarks(normalized) === normalized;
   for (const candidate of candidates) {
-    if (normalized === candidate) return true;
+    if (normalized === candidate || (unaccented && normalized === stripMeaningMarks(candidate))) return "correct";
     // Allow near edits only for reasonably long answers to avoid false hits.
     const tolerance = candidate.length >= 12 ? 2 : candidate.length >= 6 ? 1 : 0;
-    if (tolerance > 0 && editDistance(normalized, candidate, tolerance) <= tolerance) return true;
+    if (tolerance > 0 && editDistance(normalized, candidate, tolerance) <= tolerance) return "correct";
   }
-  return false;
+  const words = meaningSyllables(normalized, unaccented ? MEANING_FILLER_ASCII : MEANING_FILLER);
+  if (!words.length || normalized.length < 2) return "wrong";
+
+  let overlap = false;
+  let secondary = false;
+  for (const sense of senses) {
+    // Filter before folding so "là" and "lá" do not become the same filler.
+    const content = meaningSyllables(sense, MEANING_FILLER);
+    const compared = unaccented ? content.map(stripMeaningMarks) : content;
+    overlap ||= words.some((word) => compared.includes(word));
+    // ponytail: trust head phrases; exact matches deeper in a gloss are supporting details.
+    if (words.length === 1 && (Object.hasOwn(NEGATION, words[0]) || compared[1] === "hơn" || compared[1] === "hon")) continue;
+    if (words.every((word, index) => word === compared[index])) return "correct";
+    secondary ||= compared.some((word, start) => start > 0 && word === words[0]
+      && words.every((syllable, index) => syllable === compared[start + index]));
+  }
+  if (secondary) return "wrong";
+  if (!overlap) {
+    overlap = candidates.slice(senses.length).some((candidate) => meaningSyllables(candidate, MEANING_FILLER)
+      .some((word) => words.includes(unaccented ? stripMeaningMarks(word) : word)));
+  }
+  return overlap ? "unsure" : "wrong";
+}
+
+export function matchVietnameseMeaning(answer: string, expectedVi: string, alternates: readonly string[] = []): boolean {
+  return gradeMeaningLocally(answer, expectedVi, alternates) === "correct";
 }
 
 // ---------------------------------------------------------------------------

@@ -7,6 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export type AiCallFeature =
   | "generate-cards" | "lookup" | "lookup-enrich" | "grammar" | "reading" | "narration"
   | "speaking-question" | "speaking-feedback"
+  | "meaning-check"
   | "course-question" | "course-feedback" | "course-ideas" | "course-translate" | "course-retone"
   | "call-reply" | "call-terms" | "call-greeting" | "call-assist" | "call-summary";
 

@@ -7,6 +7,7 @@ import {
   courseActivityContentSchema,
   createRecallQueue,
   firstUnfinishedActivity,
+  gradeMeaningLocally,
   isActivityUnlocked,
   lessonActivitiesComplete,
   isFillAnswerCorrect,
@@ -187,6 +188,50 @@ describe("matchVietnameseMeaning", () => {
 
   it("normalizeMeaning strips punctuation and collapses spaces", () => {
     expect(normalizeMeaning("  Xin  chào,  bạn! ")).toBe("xin chào bạn");
+  });
+});
+
+describe("gradeMeaningLocally with seeded course cards", () => {
+  const handoff = "Việc bàn giao công việc hoặc trách nhiệm cho người khác.";
+  const backup = "Phương án dự phòng nếu kế hoạch ban đầu không thực hiện được.";
+  const checklist = "Danh sách các mục cần làm hoặc kiểm tra.";
+  const cucumber = "Một quả dưa chuột; một trái dưa leo.";
+  const falseEconomy = "Cách tiết kiệm trước mắt nhưng cuối cùng khiến tổng chi phí tăng.";
+  const bigger = "To hơn một chút.";
+
+  it.each([
+    ["bàn giao", handoff, "correct"],
+    ["sự bàn giao", handoff, "correct"],
+    ["BAN GIAO!", handoff, "correct"],
+    ["ban giáo", handoff, "wrong"],
+    ["công việc", handoff, "wrong"],
+    ["phần công việc", handoff, "wrong"],
+    ["người khác", handoff, "wrong"],
+    ["trách nhiệm", handoff, "wrong"],
+    ["bàn công", handoff, "unsure"],
+    ["chuyển giao", handoff, "unsure"],
+    ["không bàn giao", handoff, "unsure"],
+    ["con mèo", handoff, "wrong"],
+    ["?", handoff, "wrong"],
+    ["x", handoff, "wrong"],
+    ["phuong an du phong", backup, "correct"],
+    ["kế hoạch ban đầu", backup, "wrong"],
+    ["danh sách mục", checklist, "correct"],
+    ["kiểm tra", checklist, "wrong"],
+    ["dưa chuột", cucumber, "correct"],
+    ["mot trai dua leo", cucumber, "correct"],
+    ["tiết kiệm", falseEconomy, "wrong"],
+    ["to hơn", bigger, "correct"],
+    ["to", bigger, "unsure"],
+    ["vay tiền", "Việc cho vay tiền với lãi suất.", "wrong"],
+  ] as const)("grades %s against %s as %s", (answer, definition, expected) => {
+    expect(gradeMeaningLocally(answer, definition)).toBe(expected);
+    expect(matchVietnameseMeaning(answer, definition)).toBe(expected === "correct");
+  });
+
+  it("uses English definitions and synonyms for overlap without accepting a partial match", () => {
+    expect(gradeMeaningLocally("transfer ownership", handoff, ["Transfer of work or responsibility to someone else."])).toBe("unsure");
+    expect(gradeMeaningLocally("hạn chót", "Mốc cuối để nộp bài.", ["hạn nộp"])).toBe("unsure");
   });
 });
 

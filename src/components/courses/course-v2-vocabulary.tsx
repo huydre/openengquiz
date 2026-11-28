@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button";
 import {
   buildCloze,
   createRecallQueue,
+  gradeMeaningLocally,
   isFillAnswerCorrect,
-  matchVietnameseMeaning,
   nextRecallItem,
   normalizeMeaning,
   recallMasteryCount,
@@ -649,11 +649,14 @@ function SayWordStep({ card, speech, post, activity, smallStep, busy, onDone }: 
 // ---------------------------------------------------------------------------
 
 /** Result panel shared by recall and fill: verdict, the right answer and the example sentence. */
-function AnswerPanel({ correct, answerLabel, answer, card }: {
+function AnswerPanel({ correct, answerLabel, answer, card, given, answerLang = "en" }: {
   correct: boolean;
   answerLabel: string;
   answer: string;
   card: LessonCard;
+  /** What the learner typed, shown next to the expected answer. */
+  given?: string;
+  answerLang?: string;
 }) {
   const [showVi, setShowVi] = useState(false);
   return (
@@ -663,8 +666,20 @@ function AnswerPanel({ correct, answerLabel, answer, card }: {
     >
       <p className={cn("flex items-center gap-2 font-black", correct ? "text-primary-edge" : "text-destructive")}>
         {correct ? <Check aria-hidden="true" className="size-5 stroke-[3]" /> : <X aria-hidden="true" className="size-5 stroke-[3]" />}
-        {correct ? "Chính xác!" : <>{answerLabel}: <span lang="en" className="text-foreground">{answer}</span></>}
+        {correct ? "Chính xác!" : given ? "Chưa đúng" : "Đáp án"}
       </p>
+      <dl className="space-y-1.5 text-sm">
+        {given ? (
+          <div className="flex gap-2">
+            <dt className="text-muted-foreground w-20 shrink-0 font-bold">Bạn ghi</dt>
+            <dd className={cn("font-semibold", !correct && "line-through decoration-destructive/50")}>{given}</dd>
+          </div>
+        ) : null}
+        <div className="flex gap-2">
+          <dt className="text-muted-foreground w-20 shrink-0 font-bold">{answerLabel}</dt>
+          <dd lang={answerLang} className="text-foreground font-semibold">{answer}</dd>
+        </div>
+      </dl>
       {card.example_en ? (
         <div className={cn("space-y-1 border-t pt-3", correct ? "border-primary/20" : "border-destructive/20")}>
           <div className="flex items-start gap-2">
@@ -686,8 +701,10 @@ function AnswerPanel({ correct, answerLabel, answer, card }: {
 }
 
 /** Large single-line answer box with Check and "I don't know" buttons. */
-function AnswerForm({ id, lang, placeholder, value, onChange, busy, onCheck, onSkip }: {
+function AnswerForm({ id, lang, placeholder, value, onChange, busy, onCheck, onSkip, checkingLabel }: {
   id: string;
+  /** Replaces the check button label while an answer is being graded. */
+  checkingLabel?: string;
   lang?: string;
   placeholder: string;
   value: string;
@@ -710,7 +727,7 @@ function AnswerForm({ id, lang, placeholder, value, onChange, busy, onCheck, onS
         placeholder={placeholder}
         className="bg-muted/40 focus-visible:border-primary h-14 w-full rounded-2xl border-2 px-4 text-center text-lg font-semibold outline-none"
       />
-      <Button type="submit" size="lg" className="w-full" disabled={busy || !value.trim()}>Kiểm tra</Button>
+      <Button type="submit" size="lg" className="w-full" disabled={busy || !value.trim()}>{checkingLabel ?? "Kiểm tra"}</Button>
       <Button type="button" size="lg" variant="outline" className="w-full" disabled={busy} onClick={onSkip}>Tôi không biết</Button>
     </form>
   );
@@ -763,16 +780,36 @@ function RecallPhase({ cards, state, busy, onAnswer }: {
   onAnswer: (queue: RecallQueueState) => void;
 }) {
   const [answer, setAnswer] = useState("");
-  const [verdict, setVerdict] = useState<{ cardIndex: number; correct: boolean } | null>(null);
+  const [verdict, setVerdict] = useState<{ cardIndex: number; correct: boolean; given: string } | null>(null);
+  const [grading, setGrading] = useState(false);
   const item = nextRecallItem(state);
   const { mastered, total } = recallMasteryCount(state, cards.length);
   const cardIndex = verdict?.cardIndex ?? item?.cardIndex;
   const card = cardIndex == null ? null : cards[cardIndex];
 
-  function check(skip = false) {
-    if (!item || !card || busy) return;
-    const correct = !skip && matchVietnameseMeaning(answer, card.definition_vi ?? "", meaningAlternates(card));
-    setVerdict({ cardIndex: item.cardIndex, correct });
+  async function check(skip = false) {
+    if (!item || !card || busy || grading) return;
+    const given = skip ? "" : answer.trim();
+    const local = skip ? "wrong" : gradeMeaningLocally(given, card.definition_vi ?? "", meaningAlternates(card));
+    if (local !== "unsure") {
+      setVerdict({ cardIndex: item.cardIndex, correct: local === "correct", given });
+      return;
+    }
+    // Only answers that share words with the meaning but are not a clear match reach the AI grader.
+    setGrading(true);
+    let correct = false;
+    try {
+      const response = await fetch("/api/courses/meaning-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cardId: card.id, answer: given }),
+      });
+      if (response.ok) correct = Boolean(((await response.json()) as { correct?: boolean }).correct);
+    } catch {
+      // Network failure: fall back to "not correct"; the learner can still mark it right.
+    }
+    setGrading(false);
+    setVerdict({ cardIndex: item.cardIndex, correct, given });
   }
 
   function commit(override = false) {
@@ -796,12 +833,12 @@ function RecallPhase({ cards, state, busy, onAnswer }: {
       <WordHeading card={card} />
       {verdict ? (
         <>
-          <AnswerPanel correct={verdict.correct} answerLabel="Đáp án đúng" answer={card.definition_vi ?? card.definition_en ?? "Chưa có nghĩa"} card={card} />
+          <AnswerPanel correct={verdict.correct} answerLabel="Nghĩa" answerLang="vi" given={verdict.given} answer={card.definition_vi ?? card.definition_en ?? "Chưa có nghĩa"} card={card} />
           <AnswerActions busy={busy} onContinue={() => commit()} onOverride={verdict.correct ? undefined : () => commit(true)} />
         </>
       ) : (
-        <AnswerForm id="recall-answer" placeholder="Nhập nghĩa tiếng Việt..." value={answer} onChange={setAnswer} busy={busy}
-          onCheck={() => check()} onSkip={() => check(true)} />
+        <AnswerForm id="recall-answer" placeholder="Nhập nghĩa tiếng Việt, ngắn gọn là được" value={answer} onChange={setAnswer} busy={busy || grading}
+          checkingLabel={grading ? "Đang chấm..." : undefined} onCheck={() => void check()} onSkip={() => void check(true)} />
       )}
     </div>
   );
