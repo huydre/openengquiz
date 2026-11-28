@@ -9,6 +9,7 @@ import { ChevronDown, ClipboardPaste, Download, FileSpreadsheet, HelpCircle, Upl
 import { Button } from "@/components/ui/button";
 import { importVocabCards } from "@/app/(app)/sets/card-actions";
 import type { VocabSheetResult } from "@/lib/vocab/parse-vocab-sheet";
+import type { CardInput } from "@/lib/vocab/card-schema";
 import { parseVocabText } from "@/lib/vocab/parse-vocab-text";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +30,16 @@ const COLUMN_LABELS: Record<string, string> = {
   synonyms: "Đồng nghĩa",
 };
 
-export function VocabImport({ setId }: { setId?: string }) {
+/**
+ * `setId` adds the words to that set; without it a new set is created. `onCards` hands the parsed
+ * words back instead of saving (the new-set editor fills its card list with them). `bare` drops the
+ * card frame and heading when shown inside a dialog.
+ */
+export function VocabImport({ setId, onCards, bare = false }: {
+  setId?: string;
+  onCards?: (cards: CardInput[]) => void;
+  bare?: boolean;
+}) {
   const router = useRouter();
   const [source, setSource] = useState<Source>("file");
   const [parsed, setParsed] = useState<Parsed | null>(null);
@@ -63,6 +73,11 @@ export function VocabImport({ setId }: { setId?: string }) {
 
   async function save() {
     if (!parsed?.cards.length) return;
+    if (onCards) {
+      onCards(parsed.cards.slice(0, MAX_CARDS));
+      setParsed(null);
+      return;
+    }
     setSaving(true);
     setError("");
     try {
@@ -89,10 +104,10 @@ export function VocabImport({ setId }: { setId?: string }) {
   }
 
   return (
-    <section className="bg-card space-y-4 rounded-3xl border-2 p-5 shadow-[0_4px_0_var(--border)]" aria-labelledby="vocab-import-title">
+    <section className={cn("space-y-4", !bare && "bg-card rounded-3xl border-2 p-5 shadow-[0_4px_0_var(--border)]")} aria-label="Nhập từ vựng">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 id="vocab-import-title" className="text-xl font-black">{setId ? "Nhập nhiều từ" : "Nhập bộ từ"}</h2>
+          {bare ? null : <h2 className="text-xl font-black">{setId ? "Nhập nhiều từ" : "Nhập bộ từ"}</h2>}
           <p className="text-muted-foreground text-sm">Từ file Excel, CSV hoặc dán từ bảng tính, Quizlet.</p>
         </div>
         <a href="/templates/mau-bo-tu.xlsx" download className="text-primary-edge hover:bg-primary/10 flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-extrabold">
@@ -124,11 +139,11 @@ export function VocabImport({ setId }: { setId?: string }) {
           parsed={parsed}
           title={title}
           onTitle={setTitle}
-          showTitle={!setId}
+          showTitle={!setId && !onCards}
           saving={saving}
           onSave={save}
           onClear={() => setParsed(null)}
-          actionLabel={setId ? "Thêm" : "Tạo bộ từ với"}
+          actionLabel={onCards ? "Thêm vào danh sách" : setId ? "Thêm" : "Tạo bộ từ với"}
         />
       ) : null}
 

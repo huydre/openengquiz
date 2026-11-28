@@ -6,7 +6,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { SetMenu, SetSettings } from "../set-management";
 import { CardList } from "../card-list";
 import { CardEditor } from "../card-editor";
-import { VocabImport } from "@/components/sets/vocab-import";
+import { VocabImportDialog } from "@/components/sets/vocab-import-dialog";
 import { FlashcardViewer } from "../flashcard-viewer";
 import { EnrollSetButton } from "../enroll-set-button";
 import type { CardRecord } from "../card-record";
@@ -159,13 +159,15 @@ async function SetDetail({ params }: { params: Promise<{ id: string }> }) {
           <section className="space-y-3" aria-labelledby="add-card-title">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 id="add-card-title" className="text-xl font-black">Thêm thẻ</h2>
-              <Link href={`/sets/new/ai?target=${id}`} className={buttonVariants({ variant: "outline" })}>
-                <Sparkles aria-hidden="true" /> Thêm thẻ bằng AI
-              </Link>
+              <div className="flex flex-wrap gap-2">
+                <VocabImportDialog setId={id} label="Nhập từ file" />
+                <Link href={`/sets/new/ai?target=${id}`} className={buttonVariants({ variant: "outline" })}>
+                  <Sparkles aria-hidden="true" /> Thêm thẻ bằng AI
+                </Link>
+              </div>
             </div>
             <CardEditor setId={id} />
           </section>
-          <VocabImport setId={id} />
         </>
       ) : null}
     </div>
