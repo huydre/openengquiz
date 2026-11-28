@@ -6,6 +6,8 @@ export type StudyCard = {
   definition_vi: string | null;
   definition_en: string | null;
   example_en: string | null;
+  /** Shown under English answer choices; optional because grading never needs it. */
+  ipa?: string | null;
 };
 
 export type QuestionType =

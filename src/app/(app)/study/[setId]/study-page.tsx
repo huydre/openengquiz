@@ -26,7 +26,7 @@ async function StudyContent({ params, mode }: {
     .select("id, title").eq("id", setId).maybeSingle();
   if (!set) notFound();
   const { data: cards, error } = await supabase.from("cards")
-    .select("id, term, definition_vi, definition_en, example_en")
+    .select("id, term, definition_vi, definition_en, example_en, ipa")
     .eq("set_id", setId).order("position").order("created_at").order("id");
   if (error) throw new Error("Không tải được thẻ.");
   let highScore = 0;
