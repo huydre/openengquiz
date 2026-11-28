@@ -9,6 +9,7 @@ export const cardSchema = z.object({
   example_en: z.string().trim().max(2000).nullable().optional(),
   example_vi: z.string().trim().max(2000).nullable().optional(),
   synonyms: z.array(z.string().trim().min(1).max(200)).max(30).default([]),
+  image_url: z.url({ protocol: /^https$/ }).max(1000).nullable().optional(),
 });
 
 export type CardInput = z.input<typeof cardSchema>;
