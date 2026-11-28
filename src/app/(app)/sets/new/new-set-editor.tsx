@@ -6,13 +6,14 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronUp, Lightbulb, LoaderCircle, Plus, Sparkles, Trash2, WandSparkles } from "lucide-react";
+import { ChevronDown, ChevronUp, ImagePlus, Lightbulb, LoaderCircle, Plus, Sparkles, Trash2, WandSparkles } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createSet, type SetInput } from "../set-actions";
 import { importVocabCards } from "../card-actions";
 import { cn } from "@/lib/utils";
 import { VocabImportDialog } from "@/components/sets/vocab-import-dialog";
+import { CardImagePicker } from "../card-image-picker";
 import type { CardInput } from "@/lib/vocab/card-schema";
 
 type DraftCard = {
@@ -23,6 +24,7 @@ type DraftCard = {
   part_of_speech: string;
   example_en: string;
   synonyms: string;
+  image_url?: string;
 };
 type Draft = { title: string; description: string; visibility: SetInput["visibility"]; cards: DraftCard[]; suggest: boolean };
 type LookupState = { status: "loading" } | { status: "error"; message: string };
@@ -174,6 +176,7 @@ export function NewSetEditor() {
           part_of_speech: card.part_of_speech || null,
           example_en: card.example_en || null,
           synonyms: card.synonyms.split(/[;,]/).map((item) => item.trim()).filter(Boolean),
+          image_url: card.image_url || null,
         })),
       });
       if ("error" in result) return setError(`Đã tạo bộ nhưng chưa lưu được thẻ: ${result.error} Bấm Tạo để thử lại.`);
@@ -361,14 +364,17 @@ function CardRow({ card, index, total, lookup, invalid, onChange, onLookup, onTe
             </div>
             <div>
               <label htmlFor={`${id}-def`} className="text-muted-foreground mb-1 block text-xs font-extrabold uppercase">Định nghĩa</label>
-              <textarea
-                id={`${id}-def`}
-                rows={2}
-                value={card.definition_vi}
-                onChange={(event) => onChange({ definition_vi: event.target.value })}
-                placeholder={loading ? "AI đang tra từ..." : "Nghĩa tiếng Việt"}
-                className={cn(box, "resize-none py-3")}
-              />
+              <div className="flex gap-2">
+                <textarea
+                  id={`${id}-def`}
+                  rows={2}
+                  value={card.definition_vi}
+                  onChange={(event) => onChange({ definition_vi: event.target.value })}
+                  placeholder={loading ? "AI đang tra từ..." : "Nghĩa tiếng Việt"}
+                  className={cn(box, "min-w-0 flex-1 resize-none py-3")}
+                />
+                <ImageButton card={card} index={index} onChange={(image_url) => onChange({ image_url: image_url ?? undefined })} />
+              </div>
             </div>
           </div>
           {lookup?.status === "error" ? <p role="alert" className="text-destructive text-xs font-bold">{lookup.message}</p> : null}
@@ -412,5 +418,41 @@ function OptionalField({ id, label, placeholder, value, onChange, className, lan
       </label>
       <input id={id} lang={lang} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className={cn(className, "h-11")} />
     </div>
+  );
+}
+
+/** Picture slot of a draft card: opens the GIF/photo picker or an upload, shows the chosen image. */
+function ImageButton({ card, index, onChange }: { card: DraftCard; index: number; onChange: (url: string | null) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label={card.image_url ? `Đổi ảnh thẻ ${index + 1}` : `Thêm ảnh cho thẻ ${index + 1}`}
+        title={card.term.trim() ? "Chọn ảnh hoặc GIF" : "Nhập thuật ngữ trước để tìm ảnh phù hợp"}
+        className={cn(
+          "grid size-[4.5rem] shrink-0 place-items-center overflow-hidden rounded-2xl border-2 transition-colors",
+          card.image_url ? "border-transparent" : "text-muted-foreground hover:border-primary/50 hover:text-primary-edge border-dashed",
+        )}
+      >
+        {card.image_url ? (
+          // eslint-disable-next-line @next/next/no-img-element -- remote GIF or uploaded image, any host
+          <img src={card.image_url} alt="" className="size-full object-cover" />
+        ) : (
+          <span className="flex flex-col items-center gap-0.5 text-xs font-extrabold">
+            <ImagePlus className="size-5" aria-hidden="true" /> Ảnh
+          </span>
+        )}
+      </button>
+      {open ? (
+        <CardImagePicker
+          card={{ id: card.key, term: card.term.trim(), image_url: card.image_url ?? null }}
+          open={open}
+          onOpenChange={setOpen}
+          onPick={onChange}
+        />
+      ) : null}
+    </>
   );
 }

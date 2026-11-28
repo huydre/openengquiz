@@ -18,11 +18,14 @@ const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
  * Picks the illustration of a card: search openly licensed photos (prefilled with the term),
  * upload one of your own (stored under your user folder), or remove the image.
  */
-export function CardImagePicker({ setId, card, open, onOpenChange }: {
-  setId: string;
-  card: CardRecord;
+export function CardImagePicker({ setId, card, open, onOpenChange, onPick }: {
+  /** Set holding the saved card; unused when `onPick` handles the choice. */
+  setId?: string;
+  card: Pick<CardRecord, "id" | "term" | "image_url">;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Hands the chosen URL (or null to remove) back instead of saving, for cards not saved yet. */
+  onPick?: (url: string | null) => void;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState(card.term);
@@ -70,6 +73,13 @@ export function CardImagePicker({ setId, card, open, onOpenChange }: {
   }, [open, card.term]);
 
   async function save(url: string | null) {
+    if (onPick) {
+      onPick(url);
+      setSaving(false);
+      onOpenChange(false);
+      return;
+    }
+    if (!setId) return;
     setSaving(true);
     setError("");
     const result = await setCardImage(setId, card.id, url);
@@ -109,7 +119,7 @@ export function CardImagePicker({ setId, card, open, onOpenChange }: {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent aria-describedby={undefined} className="bg-card max-h-[88vh] overflow-auto rounded-3xl border-2 sm:max-w-2xl [&>*]:min-w-0">
-        <DialogTitle className="pr-8 text-xl font-black">Ảnh cho &ldquo;{card.term}&rdquo;</DialogTitle>
+        <DialogTitle className="pr-8 text-xl font-black">{card.term ? <>Ảnh cho &ldquo;{card.term}&rdquo;</> : "Chọn ảnh"}</DialogTitle>
 
         <div className="bg-muted/60 flex w-fit rounded-2xl p-1" role="tablist" aria-label="Loại ảnh">
           {(["gif", "photo"] as const).map((value) => (
