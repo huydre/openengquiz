@@ -15,6 +15,8 @@ const nextConfig: NextConfig = {
   },
   cacheComponents: true,
   partialPrefetching: true,
+  // 500 imported cards fit well under 4 MB; Vercel rejects request bodies above 4.5 MB anyway.
+  experimental: { serverActions: { bodySizeLimit: "4mb" } },
   turbopack: {
     rules: {
       "*.css": {
