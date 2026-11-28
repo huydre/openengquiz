@@ -156,9 +156,10 @@ export function LoginForm() {
               type="button"
               role="tab"
               aria-selected={mode === value}
+              disabled={loading}
               onClick={() => { setMode(value); setStatus({ kind: "idle" }); }}
               className={cn(
-                "rounded-lg py-1.5 text-sm font-extrabold transition-colors",
+                "rounded-lg py-1.5 text-sm font-extrabold transition-colors disabled:cursor-wait",
                 mode === value ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
               )}
             >
