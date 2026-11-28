@@ -1,9 +1,9 @@
 import { readFile } from "node:fs/promises";
 import { parseArgs } from "node:util";
-import { createDeepSeek } from "@ai-sdk/deepseek";
 import { z } from "zod";
 import { parseCourseCatalog } from "../src/lib/courses/course-catalog";
 import { generateActivityContent } from "./seed-activity-content";
+import { seedModel } from "./seed-model";
 import { createAdminClient } from "../src/lib/supabase/admin";
 
 /**
@@ -36,7 +36,7 @@ async function main() {
   if (!supabase || !baseURL || !apiKey || !modelId) {
     throw new Error("Configure Supabase and SEED_AI_BASE_URL, SEED_AI_API_KEY, SEED_AI_MODEL.");
   }
-  const model = createDeepSeek({ baseURL, apiKey })(modelId);
+  const model = seedModel(baseURL, apiKey, modelId);
 
   // Preflight: refuse to run if the v2 schema is not deployed.
   const probe = await supabase.from("course_lessons").select("activity_content").limit(1);

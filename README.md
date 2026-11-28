@@ -114,7 +114,7 @@ Mọi bảng bật RLS. `word_cache` chỉ server ghi (bằng secret key); `ai_u
 
 Áp `supabase/migrations/20261127160000_courses.sql` trước khi bật Khoá học. Migration xoá metadata và liên kết lộ trình cũ, không xoá `study_sets` hay `cards`. Khi thiếu schema, trang chủ vẫn dùng được nhưng không tải phần Học tiếp.
 
-Cài Bun, chuẩn bị tài khoản hệ thống đã có profile. Đặt `SEED_CONTENT_OWNER_ID` là UUID của profile; cấu hình `NEXT_PUBLIC_SUPABASE_URL` và `SUPABASE_SECRET_KEY`. Seed dùng `SEED_AI_BASE_URL`, `SEED_AI_API_KEY` và `SEED_AI_MODEL` cho cả chọn từ lẫn bổ sung thẻ; không dùng cấu hình AI của app. Base URL phải hỗ trợ `/chat/completions`.
+Cài Bun, chuẩn bị tài khoản hệ thống đã có profile. Đặt `SEED_CONTENT_OWNER_ID` là UUID của profile; cấu hình `NEXT_PUBLIC_SUPABASE_URL` và `SUPABASE_SECRET_KEY`. Đặt `SEED_AI_BASE_URL`, `SEED_AI_API_KEY` và `SEED_AI_MODEL` cho gateway seed tương thích OpenAI (`/chat/completions`, chế độ JSON object). Cả `seed:courses` và `seed:lesson-activities` dùng gateway này, không dùng cấu hình AI của app.
 
 ```bash
 pnpm seed:courses --level foundations
@@ -122,7 +122,9 @@ pnpm seed:courses --level foundations
 pnpm seed:courses
 ```
 
-Seed đọc [`content/courses/ielts.yaml`](content/courses/ielts.yaml), sinh từ theo bài, khử trùng toàn khoá và chạy pipeline bổ sung IPA, nghĩa Việt, ví dụ và đồng nghĩa. Dùng DB thử để duyệt chất lượng trước khi chạy trên môi trường thật: từng cấp và bộ từ của cấp được xuất bản công khai ngay khi lưu thành công. Chạy lại bỏ qua cấp đã có; chạy tuần tự để tránh hai phiên sinh cùng từ.
+Seed đọc [`content/courses/ielts.yaml`](content/courses/ielts.yaml). Duyệt trên DB thử trước: từng cấp và bộ từ được xuất bản công khai khi lưu. Chạy tuần tự các cấp để tránh hai phiên sinh cùng từ. Đặt `SEED_CHECKPOINT_DIR` thành thư mục cục bộ đã tạo để xử lý tối đa 2 bài một lúc và tiếp tục từ các bài đã lưu khi chạy lại.
+
+Nếu cấp đã xuất bản nhưng seed báo thiếu hoạt động, chạy `pnpm seed:lesson-activities --level <slug>`. Lệnh chỉ điền bài có `activity_content` rỗng, không sinh lại thẻ.
 
 **Học tiếp** mở bài đầu chưa xong của cấp đang học; nếu chưa chọn cấp, mục tiêu IELTS và CEFR từ onboarding dùng để gợi ý. **Sổ từ vựng** đọc các thẻ khoá học đã vào SRS và điểm phát âm gần nhất nếu có.
 
