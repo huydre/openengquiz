@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { vietnamDay } from "./activity";
 import { calculateStreakFreeze } from "./streak-freeze";
 
 const days = Array.from({ length: 30 }, (_, i) => `2026-11-${String(i + 1).padStart(2, "0")}`);
@@ -27,6 +28,19 @@ describe("streak freeze", () => {
     });
     expect(calculateStreakFreeze([...active, days[17]], days[17])).toEqual({
       streak: 8, freezes: 1, frozenDays: [days[16]], awarded: 2,
+    });
+  });
+
+  it("uses course-only days to earn and spend a freeze without counting overlapping days twice", () => {
+    const reviews = days.slice(0, 6);
+    const completions = ["2026-11-06T16:59:59Z", "2026-11-06T17:00:00Z", "2026-11-08T17:00:00Z"];
+    const courseDays = completions.map((timestamp) => vietnamDay(new Date(timestamp)));
+    expect(courseDays).toEqual([days[5], days[6], days[8]]);
+    expect(calculateStreakFreeze([...reviews, ...courseDays.slice(0, 2)], days[6])).toEqual({
+      streak: 7, freezes: 1, frozenDays: [], awarded: 1,
+    });
+    expect(calculateStreakFreeze([...reviews, ...courseDays], days[8])).toEqual({
+      streak: 9, freezes: 0, frozenDays: [days[7]], awarded: 1,
     });
   });
 });
