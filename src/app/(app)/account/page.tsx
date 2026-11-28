@@ -30,6 +30,7 @@ async function AccountContent() {
     getLeaderboardVisibility(supabase),
   ]);
   const name = profile?.display_name || user!.email?.split("@")[0] || "Bạn";
+  const avatarUrl = (user!.user_metadata?.avatar_url ?? user!.user_metadata?.picture) as string | undefined;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 pb-4">
@@ -37,9 +38,14 @@ async function AccountContent() {
 
       {/* Profile */}
       <section className="bg-card from-primary/10 to-card flex flex-col items-center gap-5 rounded-[2rem] border-2 bg-gradient-to-b p-6 text-center shadow-[0_6px_0_var(--border)] sm:flex-row sm:text-left">
-        <span className="bg-primary text-primary-foreground grid size-20 shrink-0 place-items-center rounded-full text-3xl font-black shadow-[0_5px_0_var(--primary-edge)]">
-          {initials(name)}
-        </span>
+        {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- Google profile photo, external
+          <img src={avatarUrl} alt="" referrerPolicy="no-referrer" className="size-20 shrink-0 rounded-full object-cover shadow-[0_5px_0_var(--primary-edge)] ring-4 ring-primary" />
+        ) : (
+          <span className="bg-primary text-primary-foreground grid size-20 shrink-0 place-items-center rounded-full text-3xl font-black shadow-[0_5px_0_var(--primary-edge)]">
+            {initials(name)}
+          </span>
+        )}
         <div className="min-w-0 flex-1">
           <p className="truncate text-2xl font-black">{name}</p>
           <p className="text-muted-foreground truncate font-semibold">{user!.email}</p>

@@ -17,6 +17,8 @@ export const AI_DAILY_LIMITS = {
   tts: 500,
   // Tutor narration lines per lesson; cached in lesson_narration so only misses count.
   narration: 60,
+  // Meaning recall only sends ambiguous cache misses to the model.
+  "meaning-check": 200,
 } as const;
 
 export type AiFeature = keyof typeof AI_DAILY_LIMITS;

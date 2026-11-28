@@ -27,10 +27,12 @@ async function SignedInShell({ children }: { children: React.ReactNode }) {
 
   const displayName =
     (user.user_metadata?.full_name as string | undefined) ?? user.email ?? "Bạn";
+  // Google sign-in stores the profile photo in the user metadata.
+  const avatarUrl = (user.user_metadata?.avatar_url ?? user.user_metadata?.picture) as string | undefined;
 
   return (
     <SidebarProvider style={{ "--sidebar-width-icon": "4.5rem" } as React.CSSProperties}>
-      <AppSidebar displayName={displayName} />
+      <AppSidebar displayName={displayName} avatarUrl={avatarUrl} />
       <SidebarInset>
         <header className="bg-background/90 sticky top-0 z-30 flex h-14 items-center gap-2 border-b px-3 backdrop-blur-md">
           <SidebarTrigger aria-label="Mở hoặc thu gọn menu" />
