@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { ChevronRight, FileText, LogOut, Palette, Pencil, ShieldCheck, Trash2, Trophy, type LucideIcon } from "lucide-react";
+import { ChevronRight, FileText, KeyRound, LogOut, Palette, Pencil, ShieldCheck, Trash2, Trophy, type LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/auth/actions";
 import { LogoLoader } from "@/components/layout/logo-loader";
@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { DeleteAccountForm } from "./delete-account-form";
 import { LeaderboardToggle } from "./leaderboard-toggle";
 import { ThemePicker } from "./theme-picker";
+import { PasswordForm } from "./password-form";
 
 export const metadata = { title: "Tài khoản" };
 
@@ -66,6 +67,20 @@ async function AccountContent() {
         >
           <LeaderboardToggle initial={showOnLeaderboard} labelledBy="leaderboard-setting" />
         </SettingRow>
+      </SettingsGroup>
+
+      {/* Sign-in */}
+      <SettingsGroup title="Đăng nhập">
+        <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:gap-4">
+          <div className="flex min-w-0 flex-1 items-center gap-4">
+            <span className="bg-primary/15 text-primary-edge grid size-10 shrink-0 place-items-center rounded-xl"><KeyRound className="size-5" aria-hidden="true" /></span>
+            <div className="min-w-0">
+              <p className="font-extrabold">Mật khẩu</p>
+              <p className="text-muted-foreground text-sm">Đặt hoặc đổi mật khẩu để đăng nhập bằng email mà không cần chờ link.</p>
+            </div>
+          </div>
+          <PasswordForm />
+        </div>
       </SettingsGroup>
 
       {/* Info */}

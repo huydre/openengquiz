@@ -67,6 +67,10 @@ export interface Auth1Props {
   onSubmit?: (email: string, password: string) => void;
   /** Footer note text */
   footerNote?: string;
+  /** Rendered above the form, e.g. sign-in / sign-up tabs. */
+  formHeader?: React.ReactNode;
+  /** autocomplete hint for the password field: current-password or new-password. */
+  passwordAutoComplete?: "current-password" | "new-password";
   /** Hide the password field (magic link sign-in). Default true. */
   showPasswordField?: boolean;
   /** Disables every button while a request is running */
@@ -110,6 +114,8 @@ export function Auth1({
   loading = false,
   formReplacement,
   notice,
+  formHeader,
+  passwordAutoComplete = "current-password",
 }: Auth1Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -137,6 +143,7 @@ export function Auth1({
             </CardHeader>
 
             <CardContent className="space-y-4">
+              {formReplacement ? null : formHeader}
               {formReplacement ?? (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
@@ -145,6 +152,7 @@ export function Auth1({
                     <Input
                       id="Auth1-email"
                       type="email"
+                      autoComplete="email"
                       placeholder={emailPlaceholder}
                       aria-label={emailPlaceholder}
                       value={email}
@@ -164,6 +172,8 @@ export function Auth1({
                       aria-label={passwordPlaceholder}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      autoComplete={passwordAutoComplete}
+                      minLength={passwordAutoComplete === "new-password" ? 8 : undefined}
                       className="bg-muted focus-visible:ring-primary/20 focus-visible:border-primary/50 h-9 pr-10 pl-10"
                       required
                     />
@@ -171,7 +181,7 @@ export function Auth1({
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
                       className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2 transition-colors"
-                      aria-label="Toggle password visibility"
+                      aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
                     >
                       {showPassword ? (
                         <MdVisibilityOff className="h-4 w-4" />

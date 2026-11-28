@@ -14,5 +14,7 @@ export async function GET(request: Request) {
     if (!error) return NextResponse.redirect(`${origin}${next}`);
   }
 
-  return NextResponse.redirect(`${origin}/login?error=auth`);
+  // Supabase sends expired or already-used email links back with error params instead of a code.
+  const linkFailed = searchParams.get("error_code") === "otp_expired" || searchParams.has("error_description");
+  return NextResponse.redirect(`${origin}/login?error=${linkFailed ? "link" : "auth"}`);
 }
