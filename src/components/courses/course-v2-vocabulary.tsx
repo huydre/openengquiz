@@ -881,16 +881,76 @@ function FillPhase({ step, cards, state, busy, onAdvance }: {
         </p>
         <p className="text-muted-foreground text-sm">{card.part_of_speech ?? "word"}{card.ipa ? <> - <Ipa value={card.ipa} /></> : null}</p>
       </div>
-      {result ? (
+      {result === "correct" ? (
         <>
-          <AnswerPanel correct={result === "correct"} answerLabel="Đáp án đúng" answer={cloze?.answer ?? card.term} card={card} />
-          <AnswerActions busy={busy} onContinue={() => commit(result)} onOverride={result === "correct" ? undefined : () => commit("correct")} />
+          <AnswerPanel correct answerLabel="Đáp án" given={answer.trim()} answer={cloze?.answer ?? card.term} card={card} />
+          <AnswerActions busy={busy} onContinue={() => commit(result)} />
+        </>
+      ) : result ? (
+        <>
+          <AnswerPanel correct={false} answerLabel="Đáp án" given={result === "wrong" ? answer.trim() : undefined} answer={cloze?.answer ?? card.term} card={card} />
+          <RetypeForm
+            target={cloze?.answer ?? card.term}
+            busy={busy}
+            onDone={() => commit(result)}
+            onOverride={result === "wrong" ? () => commit("correct") : undefined}
+          />
         </>
       ) : (
         <AnswerForm id="fill-answer" lang="en" placeholder="Nhập câu trả lời của bạn..." value={answer} onChange={setAnswer} busy={busy}
           onCheck={() => check()} onSkip={() => check(true)} />
       )}
     </div>
+  );
+}
+
+/**
+ * After a wrong or skipped fill answer the learner types the correct word once before moving on,
+ * so a missed word is practised instead of silently passed. The first verdict is still recorded.
+ */
+function RetypeForm({ target, busy, onDone, onOverride }: {
+  target: string;
+  busy: boolean;
+  onDone: () => void;
+  onOverride?: () => void;
+}) {
+  const [value, setValue] = useState("");
+  const [tried, setTried] = useState(false);
+  const ok = isFillAnswerCorrect(value, target);
+  return (
+    <form
+      className="space-y-2.5"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (ok) onDone();
+        else setTried(true);
+      }}
+    >
+      <label htmlFor="fill-retype" className="block text-sm font-extrabold">Gõ lại từ đúng để tiếp tục</label>
+      <input
+        id="fill-retype"
+        lang="en"
+        value={value}
+        onChange={(event) => { setValue(event.target.value); setTried(false); }}
+        disabled={busy}
+        autoComplete="off"
+        autoFocus
+        placeholder={target}
+        className={cn(
+          "bg-muted/40 h-14 w-full rounded-2xl border-2 px-4 text-center text-lg font-semibold outline-none",
+          ok ? "border-primary" : tried ? "border-destructive" : "focus-visible:border-primary",
+        )}
+      />
+      {tried && !ok ? <p role="alert" className="text-destructive text-center text-sm font-bold">Chưa khớp, gõ đúng như đáp án nhé.</p> : null}
+      <Button type="submit" size="lg" className="w-full" disabled={busy || !value.trim()}>
+        Tiếp tục <ArrowRight aria-hidden="true" />
+      </Button>
+      {onOverride ? (
+        <Button type="button" size="lg" variant="outline" className="w-full" disabled={busy} onClick={onOverride}>
+          Tôi trả lời đúng
+        </Button>
+      ) : null}
+    </form>
   );
 }
 
